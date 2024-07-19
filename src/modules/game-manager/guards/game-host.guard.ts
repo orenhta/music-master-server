@@ -1,5 +1,6 @@
 import {
   Injectable,
+  UnauthorizedException,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
@@ -21,7 +22,7 @@ export class GameHostGuard implements CanActivate {
     );
     const gameHost = gameState.gameHost;
     if (socket.id !== gameHost) {
-      throw 'not game host';
+      throw new UnauthorizedException('Not game host');
     }
     return true;
   }

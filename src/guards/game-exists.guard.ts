@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   type CanActivate,
   type ExecutionContext,
@@ -17,6 +18,10 @@ export class GameExistsGuard implements CanActivate {
     const gameState = await this.gameStateRepository.getGameState(
       payload?.gameId ?? '',
     );
-    return !!gameState;
+
+    if (!gameState) {
+      throw new BadRequestException('Game does not exist');
+    }
+    return true;
   }
 }

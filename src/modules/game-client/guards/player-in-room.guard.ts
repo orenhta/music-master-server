@@ -1,6 +1,6 @@
 import {
-  BadRequestException,
   Injectable,
+  UnauthorizedException,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
@@ -9,7 +9,7 @@ import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 import { Socket } from 'socket.io';
 
 @Injectable()
-export class BuzzerGrantedGuard implements CanActivate {
+export class PlayerInRoomGuard implements CanActivate {
   constructor(private gameStateRepository: GameStateRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -20,9 +20,11 @@ export class BuzzerGrantedGuard implements CanActivate {
     const gameState = await this.gameStateRepository.getGameState(
       payload?.gameId ?? '',
     );
-    const currentGuessingPlayer = gameState.currentGuessingPlayer;
-    if (socket.id !== currentGuessingPlayer) {
-      throw new BadRequestException('Buzzer not granted');
+    const isPlayerInGame = gameState.gamePlayers.some(
+      (player) => player.id === socket.id,
+    );
+    if (!isPlayerInGame) {
+      throw new UnauthorizedException('Player not in game');
     }
     return true;
   }

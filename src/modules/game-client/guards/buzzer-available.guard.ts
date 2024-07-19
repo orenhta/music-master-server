@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   type CanActivate,
   type ExecutionContext,
@@ -19,6 +20,10 @@ export class BuzzerAvailableGuard implements CanActivate {
       payload?.gameId ?? '',
     );
     const currentGuessingPlayer = gameState.currentGuessingPlayer;
-    return !currentGuessingPlayer;
+
+    if (currentGuessingPlayer) {
+      throw new BadRequestException('Other player is guessing');
+    }
+    return true;
   }
 }

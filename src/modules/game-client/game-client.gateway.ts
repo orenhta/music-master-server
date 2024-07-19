@@ -15,6 +15,7 @@ import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 import { GameExistsGuard } from 'src/guards/game-exists.guard';
 import { BuzzerGrantedGuard } from 'src/modules/game-client/guards/buzzer-granted.guard';
 import { BuzzerAvailableGuard } from './guards/buzzer-available.guard';
+import { PlayerInRoomGuard } from './guards/player-in-room.guard';
 
 @WebSocketGateway({
   namespace: 'game-client',
@@ -42,7 +43,7 @@ export class GameClientGateway {
     return true;
   }
 
-  @UseGuards(GameExistsGuard, BuzzerAvailableGuard)
+  @UseGuards(GameExistsGuard, PlayerInRoomGuard, BuzzerAvailableGuard)
   @SubscribeMessage('buzzer')
   async handleBuzzer(
     @MessageBody(defaultValidationPipe)
@@ -53,7 +54,7 @@ export class GameClientGateway {
     return true;
   }
 
-  @UseGuards(GameExistsGuard, BuzzerGrantedGuard)
+  @UseGuards(GameExistsGuard, PlayerInRoomGuard, BuzzerGrantedGuard)
   @SubscribeMessage('answer')
   async handleAnswer(
     @MessageBody(defaultValidationPipe)

@@ -44,9 +44,6 @@ export class GameClientService {
       buzzerRequest.gameId,
     );
 
-    if (gameState.currentGuessingPlayer) {
-      throw 'Player already guessed';
-    }
     this.gameStateRepository.saveGameState({
       ...gameState,
       currentGuessingPlayer: socketId,
@@ -63,10 +60,6 @@ export class GameClientService {
     const gameState = await this.gameStateRepository.getGameState(
       answerRequest.gameId,
     );
-
-    if (gameState.currentGuessingPlayer !== socketId) {
-      throw 'Player not allowed to answer';
-    }
 
     const correctAnswer = gameState.currentCorrectAnswer;
     const isCorrect =

@@ -4,7 +4,7 @@ import { JoinRoomRequest } from 'src/types/join-game.type';
 import { BuzzerRequest } from 'src/types/buzzer-request.type';
 import { AnswerRequest } from 'src/types/answer-request.type';
 import { GameClientGateway } from './game-client.gateway';
-import { GameStateRepository } from 'src/game-state/game-state.repository';
+import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 
 @Injectable()
 export class GameClientService {

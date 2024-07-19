@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { GameClientModule } from './game-client/game-client.module';
-import { GameManagerModule } from './game-manager/game-manager.module';
+import { GameClientModule } from './modules/game-client/game-client.module';
+import { GameManagerModule } from './modules/game-manager/game-manager.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 

@@ -1,10 +1,10 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { GameState } from 'src/types/game-state.type';
-import { JoinRoomRequest } from 'src/types/join-game.type';
-import { BuzzerRequest } from 'src/types/buzzer-request.type';
-import { AnswerRequest } from 'src/types/answer-request.type';
 import { GameClientGateway } from './game-client.gateway';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
+import { JoinGameRequestDto } from 'src/dto/join-game-request.dto';
+import { AnswerRequestDto } from 'src/dto/answer-request.dto';
+import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 
 @Injectable()
 export class GameClientService {
@@ -14,17 +14,13 @@ export class GameClientService {
     private readonly gameStateRepository: GameStateRepository,
   ) {}
 
-  async addUserToRoom(
-    joinGameRequest: JoinRoomRequest,
+  async addUserToGame(
+    joinGameRequest: JoinGameRequestDto,
     socketId: string,
   ): Promise<void> {
     const gameState: GameState = await this.gameStateRepository.getGameState(
       joinGameRequest.gameId,
     );
-
-    if (!gameState) {
-      throw 'Game not found';
-    }
 
     if (gameState.gamePlayers.some((player) => player.id === socketId)) {
       throw 'Player already in game';
@@ -34,24 +30,20 @@ export class GameClientService {
       throw 'Game already started';
     }
 
-    if (joinGameRequest.playerName.trim() === '') {
-      throw 'Player name cannot be empty';
-    }
-
-    this.gameStateRepository.addUserToRoom(joinGameRequest, socketId);
+    this.gameStateRepository.addUserToGame(joinGameRequest, socketId);
     this.gameEventsGateway.server
       .to(joinGameRequest.gameId)
       .emit('player-joined', { userName: joinGameRequest.playerName });
   }
 
-  async handleBuzzerRequest(buzzerRequest: BuzzerRequest, socketId: string) {
+  async handleBuzzerRequest(
+    buzzerRequest: GameRelatedRequestDto,
+    socketId: string,
+  ) {
     const gameState = await this.gameStateRepository.getGameState(
       buzzerRequest.gameId,
     );
 
-    if (!gameState) {
-      throw 'Game not found';
-    }
     if (gameState.currentGuessingPlayer) {
       throw 'Player already guessed';
     }
@@ -67,14 +59,11 @@ export class GameClientService {
       });
   }
 
-  async handleAnswerRequest(answerRequest: AnswerRequest, socketId: string) {
+  async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {
     const gameState = await this.gameStateRepository.getGameState(
       answerRequest.gameId,
     );
 
-    if (!gameState) {
-      throw 'Game not found';
-    }
     if (gameState.currentGuessingPlayer !== socketId) {
       throw 'Player not allowed to answer';
     }

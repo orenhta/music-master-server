@@ -6,11 +6,15 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
-import { AnswerRequest } from 'src/types/answer-request.type';
-import { BuzzerRequest } from 'src/types/buzzer-request.type';
-import { JoinRoomRequest } from 'src/types/join-game.type';
 import { GameClientService } from './game-client.service';
-import { forwardRef, Inject } from '@nestjs/common';
+import { forwardRef, Inject, UseGuards } from '@nestjs/common';
+import { JoinGameRequestDto } from 'src/dto/join-game-request.dto';
+import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
+import { AnswerRequestDto } from 'src/dto/answer-request.dto';
+import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
+import { GameExistsGuard } from 'src/guards/game-exists.guard';
+import { BuzzerGrantedGuard } from 'src/modules/game-client/guards/buzzer-granted.guard';
+import { BuzzerAvailableGuard } from './guards/buzzer-available.guard';
 
 @WebSocketGateway({
   namespace: 'game-client',
@@ -26,31 +30,34 @@ export class GameClientGateway {
     private gameHostService: GameClientService,
   ) {}
 
-  @SubscribeMessage('join-room')
-  async handleJoinRoom(
-    @MessageBody()
-    payload: JoinRoomRequest,
+  @UseGuards(GameExistsGuard)
+  @SubscribeMessage('join-game')
+  async handleJoinGame(
+    @MessageBody(defaultValidationPipe)
+    payload: JoinGameRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<boolean> {
-    await this.gameHostService.addUserToRoom(payload, client.id);
+    await this.gameHostService.addUserToGame(payload, client.id);
     client.join(payload.gameId);
     return true;
   }
 
+  @UseGuards(GameExistsGuard, BuzzerAvailableGuard)
   @SubscribeMessage('buzzer')
   async handleBuzzer(
-    @MessageBody()
-    payload: BuzzerRequest,
+    @MessageBody(defaultValidationPipe)
+    payload: GameRelatedRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<boolean> {
     await this.gameHostService.handleBuzzerRequest(payload, client.id);
     return true;
   }
 
+  @UseGuards(GameExistsGuard, BuzzerGrantedGuard)
   @SubscribeMessage('answer')
   async handleAnswer(
-    @MessageBody()
-    payload: AnswerRequest,
+    @MessageBody(defaultValidationPipe)
+    payload: AnswerRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<boolean> {
     await this.gameHostService.handleAnswerRequest(payload, client.id);

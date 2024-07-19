@@ -64,12 +64,13 @@ export class GameClientService {
       (player) => player.id === socketId,
     )!;
 
-    const buzzerId = gameState.buzzersGranted.length;
+    const buzzersGranted = [...gameState.buzzersGranted, socketId];
+    const buzzerId = buzzersGranted.length;
 
     this.gameStateRepository.saveGameState({
       ...gameState,
       currentGuessingPlayer: socketId,
-      buzzersGranted: [...gameState.buzzersGranted, socketId],
+      buzzersGranted,
     });
 
     this.gameManagerGateway.server
@@ -102,7 +103,7 @@ export class GameClientService {
           .emit('buzzer-revoked');
 
         this.gameManagerGateway.server
-          .to(buzzerRequest.gameId)
+          .to(gameState.gameHost)
           .emit('buzzer-revoked');
       }
     }, 5000);
@@ -150,6 +151,10 @@ export class GameClientService {
 
       this.gameClientGateway.server
         .to(answerRequest.gameId)
+        .emit('buzzer-revoked');
+
+      this.gameManagerGateway.server
+        .to(gameState.gameHost)
         .emit('buzzer-revoked');
     }
   }

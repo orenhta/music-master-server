@@ -4,12 +4,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { GameState } from 'src/types/game-state.type';
-import { songsById } from 'src/songs';
 import { EndRoundResponse } from 'src/types/end-round-response.type';
 import { GameHostRequest } from 'src/types/game-host-request';
 import { GameCreationResponse } from 'src/types/game-creation-response';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 import { GameClientGateway } from 'src/modules/game-client/game-client.gateway';
+import { songsById } from 'src/songs/songs';
 
 @Injectable()
 export class GameManagerService {

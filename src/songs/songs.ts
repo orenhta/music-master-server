@@ -1,4 +1,4 @@
-import type { Song } from './types/song.type';
+import type { Song } from '../types/song.type';
 
 export const songsById: Record<number, Song> = {
   1: {

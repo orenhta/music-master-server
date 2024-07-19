@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
+import { GameStatus } from 'src/enums/game-status.enum';
 
 @Injectable()
 export class BuzzerAvailableGuard implements CanActivate {
@@ -24,6 +25,11 @@ export class BuzzerAvailableGuard implements CanActivate {
     if (currentGuessingPlayer) {
       throw new BadRequestException('Other player is guessing');
     }
+
+    if (gameState.gameStatus !== GameStatus.ROUND_IN_PROGRESS) {
+      throw new BadRequestException('Round is not in progress');
+    }
+
     return true;
   }
 }

@@ -13,6 +13,9 @@ import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
 import { GameExistsGuard } from 'src/guards/game-exists.guard';
 import { UseGuards } from '@nestjs/common';
 import { GameHostGuard } from './guards/game-host.guard';
+import { EndRoundResponse } from 'src/types/end-round-response.type';
+import { RoundData } from 'src/types/round-data.type';
+import { EndGameResponse } from 'src/types/end-game-response.type';
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -33,6 +36,8 @@ export class GameManagerGateway {
     const gameCreationResponse = await this.gameManagerService.createGame(
       client.id,
     );
+
+    console.log(client.rooms);
     return gameCreationResponse;
   }
 
@@ -41,8 +46,17 @@ export class GameManagerGateway {
   async handleNextRound(
     @MessageBody(defaultValidationPipe)
     payload: GameRelatedRequestDto,
+  ): Promise<RoundData> {
+    return await this.gameManagerService.nextRound(payload);
+  }
+
+  @UseGuards(GameExistsGuard, GameHostGuard)
+  @SubscribeMessage('start-round')
+  async handleStartRound(
+    @MessageBody(defaultValidationPipe)
+    payload: GameRelatedRequestDto,
   ): Promise<boolean> {
-    await this.gameManagerService.nextRound(payload);
+    await this.gameManagerService.startRound(payload);
     return true;
   }
 
@@ -51,9 +65,8 @@ export class GameManagerGateway {
   async handleEndRound(
     @MessageBody(defaultValidationPipe)
     payload: GameRelatedRequestDto,
-  ): Promise<boolean> {
-    await this.gameManagerService.endRound(payload);
-    return true;
+  ): Promise<EndRoundResponse> {
+    return await this.gameManagerService.endRound(payload);
   }
 
   @UseGuards(GameExistsGuard, GameHostGuard)
@@ -61,8 +74,7 @@ export class GameManagerGateway {
   async handleEndGame(
     @MessageBody(defaultValidationPipe)
     payload: GameRelatedRequestDto,
-  ): Promise<boolean> {
-    await this.gameManagerService.endGame(payload);
-    return true;
+  ): Promise<EndGameResponse> {
+    return await this.gameManagerService.endGame(payload);
   }
 }

@@ -120,14 +120,14 @@ export class GameManagerService {
     return {
       guessedBy: null,
       correctAnswer: gameState.currentCorrectAnswer ?? '',
-      scores: gameState.gamePlayers.map(({ id: _id, ...player }) => player),
+      scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
     };
   }
 
   async endGame(
     gameHostRequest: GameRelatedRequestDto,
   ): Promise<EndGameResponse> {
-    const { guessedBy, ...endGameResponse } =
+    const { guessedBy: _, ...endGameResponse } =
       await this.endRound(gameHostRequest);
     await this.gameStateRepository.deleteGameState(gameHostRequest.gameId);
 

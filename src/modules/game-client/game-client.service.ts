@@ -132,7 +132,7 @@ export class GameClientService {
       const endRoundResponse: EndRoundResponse = {
         guessedBy: player.userName,
         correctAnswer: gameState.currentCorrectAnswer ?? '',
-        scores: gameState.gamePlayers.map(({ id: _id, ...player }) => player),
+        scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
       };
 
       this.gameManagerGateway.server

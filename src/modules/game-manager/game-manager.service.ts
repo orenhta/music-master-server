@@ -62,7 +62,7 @@ export class GameManagerService {
     );
 
     return {
-      correctAnswer: gameState.currentCorrectAnswer,
+      correctAnswer: gameState.currentCorrectAnswer ?? '',
       scores: gameState.gamePlayers.map(({ id: _id, ...player }) => player),
     };
   }

@@ -11,9 +11,12 @@ export class BuzzerAvailableGuard implements CanActivate {
   constructor(private gameStateRepository: GameStateRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const payload = context.switchToWs().getData<GameRelatedRequestDto>();
+    const payload = context
+      .switchToWs()
+      .getData<Partial<GameRelatedRequestDto>>();
+
     const gameState = await this.gameStateRepository.getGameState(
-      payload.gameId,
+      payload?.gameId ?? '',
     );
     const currentGuessingPlayer = gameState.currentGuessingPlayer;
     return !currentGuessingPlayer;

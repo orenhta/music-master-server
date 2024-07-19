@@ -70,7 +70,7 @@ export class GameClientService {
 
     const correctAnswer = gameState.currentCorrectAnswer;
     const isCorrect =
-      answerRequest.answer.toLowerCase() === correctAnswer.toLowerCase();
+      answerRequest.answer.toLowerCase() === correctAnswer?.toLowerCase();
 
     this.gameStateRepository.saveGameState({
       ...gameState,
@@ -80,7 +80,7 @@ export class GameClientService {
     if (isCorrect) {
       const player = gameState.gamePlayers.find(
         (player) => player.id === socketId,
-      );
+      )!;
       player.score += 10;
       this.gameEventsGateway.server
         .to(answerRequest.gameId)

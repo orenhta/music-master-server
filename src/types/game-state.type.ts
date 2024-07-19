@@ -5,6 +5,6 @@ export type GameState = {
   gameHost: string;
   round: number;
   gamePlayers: Player[];
-  currentCorrectAnswer: string;
-  currentGuessingPlayer: string;
+  currentCorrectAnswer: string | null;
+  currentGuessingPlayer: string | null;
 };

@@ -1,18 +1,14 @@
-import {
-  BadRequestException,
-  forwardRef,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { GameState } from 'src/types/game-state.type';
 import { GameClientGateway } from './game-client.gateway';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 import { JoinGameRequestDto } from 'src/dto/join-game-request.dto';
 import { AnswerRequestDto } from 'src/dto/answer-request.dto';
-import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 import { GameStatus } from 'src/enums/game-status.enum';
 import { EndRoundResponse } from 'src/types/end-round-response.type';
 import { GameManagerGateway } from '../game-manager/game-manager.gateway';
+import { WsException } from '@nestjs/websockets';
+import { isGameStateOfStatus } from 'src/functions/is-game-state-of-status';
 
 @Injectable()
 export class GameClientService {
@@ -32,18 +28,14 @@ export class GameClientService {
     );
 
     if (gameState.gamePlayers.some((player) => player.id === socketId)) {
-      throw new BadRequestException('Player already in game');
+      throw new WsException('Player already in game');
     }
     if (
       gameState.gamePlayers.some(
         (player) => player.userName === joinGameRequest.playerName,
       )
     ) {
-      throw new BadRequestException('Username already taken');
-    }
-
-    if (gameState.gameStatus !== GameStatus.CREATED) {
-      throw new BadRequestException('Game already started');
+      throw new WsException('Username already taken');
     }
 
     this.gameStateRepository.addUserToGame(joinGameRequest, socketId);
@@ -52,25 +44,27 @@ export class GameClientService {
       .emit('player-joined', { userName: joinGameRequest.playerName });
   }
 
-  async handleBuzzerRequest(
-    buzzerRequest: GameRelatedRequestDto,
-    socketId: string,
-  ) {
-    const gameState = await this.gameStateRepository.getGameState(
-      buzzerRequest.gameId,
-    );
+  async handleBuzzerRequest(socketId: string) {
+    const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
+    const gameState =
+      await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
+        gameId,
+      );
 
     const player = gameState.gamePlayers.find(
       (player) => player.id === socketId,
     )!;
 
-    const buzzersGranted = [...gameState.buzzersGranted, socketId];
+    const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
     const buzzerId = buzzersGranted.length;
 
     this.gameStateRepository.saveGameState({
       ...gameState,
-      currentGuessingPlayer: socketId,
-      buzzersGranted,
+      roundData: {
+        ...gameState.roundData,
+        currentGuessingPlayer: socketId,
+        buzzersGranted,
+      },
     });
 
     this.gameManagerGateway.server
@@ -80,81 +74,112 @@ export class GameClientService {
       });
 
     this.gameClientGateway.server
-      .to(buzzerRequest.gameId)
+      .to(gameId)
       .except(socketId)
       .emit('buzzer-granted');
 
     setTimeout(async () => {
-      const currentGameState = await this.gameStateRepository.getGameState(
-        buzzerRequest.gameId,
-      );
-      const currentBuzzerId = currentGameState.buzzersGranted.length;
-      if (
-        currentGameState.currentGuessingPlayer === socketId &&
-        currentBuzzerId === buzzerId
-      ) {
-        this.gameStateRepository.saveGameState({
-          ...gameState,
-          currentGuessingPlayer: null,
-        });
+      const currentGameState =
+        await this.gameStateRepository.getGameState(gameId);
+      if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
+        const currentBuzzerId =
+          currentGameState.roundData.buzzersGranted.length;
+        if (
+          currentGameState.round === gameState.round &&
+          currentGameState.roundData.currentGuessingPlayer === socketId &&
+          currentBuzzerId === buzzerId
+        ) {
+          this.gameStateRepository.saveGameState({
+            ...gameState,
+            roundData: {
+              ...gameState.roundData,
+              currentGuessingPlayer: null,
+            },
+          });
 
-        this.gameClientGateway.server
-          .to(buzzerRequest.gameId)
-          .emit('buzzer-revoked');
+          this.gameClientGateway.server.to(gameId).emit('buzzer-revoked');
 
-        this.gameManagerGateway.server
-          .to(gameState.gameHost)
-          .emit('buzzer-revoked');
+          this.gameManagerGateway.server
+            .to(gameState.gameHost)
+            .emit('buzzer-revoked');
+        }
       }
     }, 5000);
   }
 
   async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {
-    const gameState = await this.gameStateRepository.getGameState(
-      answerRequest.gameId,
-    );
+    const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
+    const gameState =
+      await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
+        gameId,
+      );
+    const player = gameState.gamePlayers.find(
+      (player) => player.id === socketId,
+    )!;
+    const correctAnswer = gameState.roundData.currentCorrectAnswer;
+    const newGameState = { ...gameState };
 
-    const correctAnswer = gameState.currentCorrectAnswer;
-    const isCorrect =
-      answerRequest.answer.toLowerCase() === correctAnswer?.toLowerCase();
+    if (!newGameState.roundData.artistGuessedBy) {
+      const isArtistCorrect = answerRequest.answer
+        .toLowerCase()
+        .includes(correctAnswer.artist.toLowerCase());
 
-    if (isCorrect) {
-      const player = gameState.gamePlayers.find(
-        (player) => player.id === socketId,
-      )!;
-      player.score += 10;
+      if (isArtistCorrect) {
+        newGameState.roundData = {
+          ...newGameState.roundData,
+          artistGuessedBy: player.userName,
+        };
+        player.score += 5;
+      }
+    }
 
-      await this.gameStateRepository.saveGameState({
-        ...gameState,
-        currentGuessingPlayer: null,
-        gameStatus: GameStatus.ROUND_ENDED,
-      });
+    if (!newGameState.roundData.songGuessedBy) {
+      const isTitleCorrect = answerRequest.answer
+        .toLowerCase()
+        .includes(correctAnswer.title.toLowerCase());
 
+      if (isTitleCorrect) {
+        newGameState.roundData = {
+          ...newGameState.roundData,
+          songGuessedBy: player.userName,
+        };
+        player.score += 10;
+      }
+    }
+
+    if (
+      newGameState.roundData.artistGuessedBy &&
+      newGameState.roundData.songGuessedBy
+    ) {
       const endRoundResponse: EndRoundResponse = {
-        guessedBy: player.userName,
-        correctAnswer: gameState.currentCorrectAnswer ?? '',
-        scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
+        songGuessedBy: newGameState.roundData.songGuessedBy,
+        artistGuessedBy: newGameState.roundData.artistGuessedBy,
+        correctAnswer: newGameState.roundData.currentCorrectAnswer,
+        scores: newGameState.gamePlayers.map(({ id: _, ...player }) => player),
       };
 
-      this.gameManagerGateway.server
-        .to(gameState.gameHost)
-        .emit('round-ended', endRoundResponse);
-
-      this.gameClientGateway.server
-        .to(answerRequest.gameId)
-        .emit('round-ended');
-    } else {
-      this.gameStateRepository.saveGameState({
-        ...gameState,
-        currentGuessingPlayer: null,
+      await this.gameStateRepository.saveGameState({
+        ...newGameState,
+        gameStatus: GameStatus.ROUND_ENDED,
+        roundData: {},
       });
 
-      this.gameClientGateway.server
-        .to(answerRequest.gameId)
-        .emit('buzzer-revoked');
-
       this.gameManagerGateway.server
-        .to(gameState.gameHost)
+        .to(newGameState.gameHost)
+        .emit('round-ended', endRoundResponse);
+      this.gameClientGateway.server.to(gameId).emit('round-ended');
+    } else {
+      this.gameStateRepository.saveGameState({
+        ...newGameState,
+        roundData: {
+          ...newGameState.roundData,
+          currentGuessingPlayer: null,
+        },
+      });
+
+      this.gameClientGateway.server.to(gameId).emit('buzzer-revoked');
+      this.gameManagerGateway.server
+        .to(newGameState.gameHost)
         .emit('buzzer-revoked');
     }
   }

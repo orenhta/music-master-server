@@ -6,10 +6,9 @@ import {
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 import { Socket } from 'socket.io';
 import { WsException } from '@nestjs/websockets';
-import { GameStatus } from 'src/enums/game-status.enum';
 
 @Injectable()
-export class BuzzerGrantedGuard implements CanActivate {
+export class SocketInRoomGuard implements CanActivate {
   constructor(private gameStateRepository: GameStateRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -17,15 +16,11 @@ export class BuzzerGrantedGuard implements CanActivate {
     const gameId = await this.gameStateRepository.getGameIdBySocketId(
       socket.id,
     );
-    const gameState =
-      await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
-        gameId,
-      );
 
-    const currentGuessingPlayer = gameState.roundData.currentGuessingPlayer;
-    if (socket.id !== currentGuessingPlayer) {
-      throw new WsException('Buzzer not granted');
+    if (!gameId) {
+      throw new WsException('Socket not in room');
     }
+
     return true;
   }
 }

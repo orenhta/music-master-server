@@ -1,7 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
-import { GameRelatedRequestDto } from './game-related-request.dto';
 
-export class AnswerRequestDto extends GameRelatedRequestDto {
+export class AnswerRequestDto {
   @IsString()
   @IsNotEmpty()
   answer: string;

@@ -1,7 +1,9 @@
 import type { Player } from './player.type';
+import { Song } from './song.type';
 
 export type EndRoundResponse = {
-  guessedBy: string | null;
-  correctAnswer: string;
+  songGuessedBy: string | null;
+  artistGuessedBy: string | null;
+  correctAnswer: Song;
   scores: Omit<Player, 'id'>[];
 };

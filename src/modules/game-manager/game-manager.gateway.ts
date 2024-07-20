@@ -1,6 +1,5 @@
 import {
   ConnectedSocket,
-  MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -8,14 +7,15 @@ import {
 import { Socket, Server } from 'socket.io';
 import { GameCreationResponse } from 'src/types/game-creation-response';
 import { GameManagerService } from './game-manager.service';
-import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
-import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
-import { GameExistsGuard } from 'src/guards/game-exists.guard';
-import { UseGuards } from '@nestjs/common';
-import { GameHostGuard } from './guards/game-host.guard';
+import { UseFilters, UseGuards } from '@nestjs/common';
 import { EndRoundResponse } from 'src/types/end-round-response.type';
-import { RoundData } from 'src/types/round-data.type';
 import { EndGameResponse } from 'src/types/end-game-response.type';
+import { GameStatus } from 'src/enums/game-status.enum';
+import { AllowedGameStatus } from 'src/guards/allowed-game-status.decorator';
+import { NextRoundResponse } from 'src/types/next-round-response.type';
+import { AllowedGameStatusGuard } from 'src/guards/allowed-game-status.guard';
+import { WsExceptionsFilter } from 'src/ws-exception.filter';
+import { SocketInRoomGuard } from 'src/guards/socket-in-room.guard';
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -23,6 +23,7 @@ import { EndGameResponse } from 'src/types/end-game-response.type';
     origin: '*',
   },
 })
+@UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
 export class GameManagerGateway {
   @WebSocketServer() server: Server;
@@ -37,44 +38,40 @@ export class GameManagerGateway {
       client.id,
     );
 
-    console.log(client.rooms);
     return gameCreationResponse;
   }
 
-  @UseGuards(GameExistsGuard, GameHostGuard)
+  @AllowedGameStatus(GameStatus.CREATED, GameStatus.ROUND_ENDED)
+  @UseGuards(SocketInRoomGuard, AllowedGameStatusGuard)
   @SubscribeMessage('next-round')
   async handleNextRound(
-    @MessageBody(defaultValidationPipe)
-    payload: GameRelatedRequestDto,
-  ): Promise<RoundData> {
-    return await this.gameManagerService.nextRound(payload);
+    @ConnectedSocket() client: Socket,
+  ): Promise<NextRoundResponse> {
+    return await this.gameManagerService.nextRound(client.id);
   }
 
-  @UseGuards(GameExistsGuard, GameHostGuard)
+  @AllowedGameStatus(GameStatus.PENDING_ROUND_START)
+  @UseGuards(SocketInRoomGuard, AllowedGameStatusGuard)
   @SubscribeMessage('start-round')
-  async handleStartRound(
-    @MessageBody(defaultValidationPipe)
-    payload: GameRelatedRequestDto,
-  ): Promise<boolean> {
-    await this.gameManagerService.startRound(payload);
+  async handleStartRound(@ConnectedSocket() client: Socket): Promise<boolean> {
+    await this.gameManagerService.startRound(client.id);
     return true;
   }
 
-  @UseGuards(GameExistsGuard, GameHostGuard)
+  @AllowedGameStatus(GameStatus.ROUND_IN_PROGRESS)
+  @UseGuards(SocketInRoomGuard, AllowedGameStatusGuard)
   @SubscribeMessage('end-round')
   async handleEndRound(
-    @MessageBody(defaultValidationPipe)
-    payload: GameRelatedRequestDto,
+    @ConnectedSocket() client: Socket,
   ): Promise<EndRoundResponse> {
-    return await this.gameManagerService.endRound(payload);
+    return await this.gameManagerService.endRound(client.id);
   }
 
-  @UseGuards(GameExistsGuard, GameHostGuard)
+  @UseGuards(SocketInRoomGuard)
   @SubscribeMessage('end-game')
   async handleEndGame(
-    @MessageBody(defaultValidationPipe)
-    payload: GameRelatedRequestDto,
+    @ConnectedSocket() client: Socket,
   ): Promise<EndGameResponse> {
-    return await this.gameManagerService.endGame(payload);
+    return await this.gameManagerService.endGame(client.id);
   }
 }

@@ -1,28 +1,26 @@
 import {
   Injectable,
-  UnauthorizedException,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
-import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
-import { Socket } from 'socket.io';
+import { WsException } from '@nestjs/websockets';
+import { GameRelatedRequestDto } from 'src/dto/game-related-request.dto';
 
 @Injectable()
-export class GameHostGuard implements CanActivate {
+export class GameExistsGuard implements CanActivate {
   constructor(private gameStateRepository: GameStateRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const socket = context.switchToWs().getClient<Socket>();
     const payload = context
       .switchToWs()
       .getData<Partial<GameRelatedRequestDto>>();
     const gameState = await this.gameStateRepository.getGameState(
       payload?.gameId ?? '',
     );
-    const gameHost = gameState.gameHost;
-    if (socket.id !== gameHost) {
-      throw new UnauthorizedException('Not game host');
+
+    if (!gameState) {
+      throw new WsException('Game does not exist');
     }
     return true;
   }

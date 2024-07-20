@@ -180,7 +180,17 @@ export class GameClientService {
       this.gameClientGateway.server.to(gameId).emit('buzzer-revoked');
       this.gameManagerGateway.server
         .to(newGameState.gameHost)
-        .emit('buzzer-revoked');
+        .emit('buzzer-revoked', {
+          answeredBy: player.userName,
+          ...(!gameState.roundData.artistGuessedBy &&
+          newGameState.roundData.artistGuessedBy
+            ? { artist: correctAnswer.artist }
+            : {}),
+          ...(!gameState.roundData.songGuessedBy &&
+          newGameState.roundData.songGuessedBy
+            ? { title: correctAnswer.title }
+            : {}),
+        });
     }
   }
 }

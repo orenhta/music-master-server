@@ -1,45 +1,85 @@
 import { Injectable } from '@nestjs/common';
+import Redis from 'ioredis';
+import { REDIS_SEPERATOR } from 'src/constants/constants';
 import { JoinGameRequestDto } from 'src/dto/join-game-request.dto';
 import { GameStatus } from 'src/enums/game-status.enum';
+import { RedisDirectory } from 'src/enums/redis-directory.enum';
+import { SocketType } from 'src/enums/socket-type.enum';
 import { GameState } from 'src/types/game-state.type';
 
 @Injectable()
 export class GameStateRepository {
-  private gameStates: Record<string, GameState> = {};
-  private gameIdBySocketId: Record<string, string> = {};
+  constructor(private readonly redis: Redis) {}
 
   async saveGameState<T extends GameStatus>(newGameState: GameState<T>) {
-    if (!this.gameStates[newGameState.gameId]) {
-      this.gameIdBySocketId[newGameState.gameHost] = newGameState.gameId;
+    if (
+      newGameState.gameStatus === GameStatus.CREATED &&
+      !newGameState.gamePlayers.length
+    ) {
+      await this.redis.set(
+        `${RedisDirectory.SOCKETS}${REDIS_SEPERATOR}${newGameState.gameHost}`,
+        JSON.stringify({ gameId: newGameState.gameId, type: SocketType.HOST }),
+      );
     }
-    this.gameStates[newGameState.gameId] = newGameState;
+    await this.redis.call(
+      'JSON.SET',
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPERATOR}${newGameState.gameId}`,
+      '$',
+      JSON.stringify(newGameState),
+    );
   }
 
   async getGameState<T extends GameStatus = GameStatus>(
     gameId: string,
   ): Promise<GameState<T>> {
-    return this.gameStates[gameId] as GameState<T>;
+    const res = (await this.redis.call(
+      'JSON.GET',
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPERATOR}${gameId}`,
+    )) as string;
+
+    return JSON.parse(res!) as GameState<T>;
   }
 
   async getGameIdBySocketId(socketId: string): Promise<string> {
-    return this.gameIdBySocketId[socketId];
+    const res = await this.redis.get(
+      `${RedisDirectory.SOCKETS}${REDIS_SEPERATOR}${socketId}`,
+    );
+
+    return JSON.parse(res!)?.gameId;
   }
 
   async addUserToGame(joinGameRequest: JoinGameRequestDto, socketId: string) {
-    this.gameStates[joinGameRequest.gameId].gamePlayers.push({
-      id: socketId,
-      userName: joinGameRequest.playerName,
-      score: 0,
-    });
-    this.gameIdBySocketId[socketId] = joinGameRequest.gameId;
+    await this.redis.call(
+      'JSON.ARRAPPEND',
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPERATOR}${joinGameRequest.gameId}`,
+      '$.gamePlayers',
+      JSON.stringify({
+        id: socketId,
+        userName: joinGameRequest.playerName,
+        score: 0,
+      }),
+    );
+
+    await this.redis.set(
+      `${RedisDirectory.SOCKETS}${REDIS_SEPERATOR}${socketId}`,
+      JSON.stringify({
+        gameId: joinGameRequest.gameId,
+        type: SocketType.PLAYER,
+      }),
+    );
   }
 
   async deleteGameState(gameId: string) {
-    delete this.gameStates[gameId];
-    this.gameIdBySocketId = Object.fromEntries(
-      Object.entries(this.gameIdBySocketId).filter(
-        ([_, value]) => value !== gameId,
-      ),
+    const gameState = await this.getGameState(gameId);
+    await this.redis.call(
+      'JSON.DEL',
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPERATOR}${gameId}`,
+    );
+    gameState.gamePlayers.forEach((player) => {
+      this.redis.del(`${RedisDirectory.SOCKETS}${REDIS_SEPERATOR}${player.id}`);
+    });
+    this.redis.del(
+      `${RedisDirectory.SOCKETS}${REDIS_SEPERATOR}${gameState.gameHost}`,
     );
   }
 }

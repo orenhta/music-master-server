@@ -23,8 +23,19 @@ export class GameManagerService {
       throw new WsException('host is already in a game');
     }
 
+    const gameId = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, '0');
+
+    const gameIdExists =
+      !!(await this.gameStateRepository.getGameState(gameId));
+
+    if (gameIdExists) {
+      throw new WsException('gameId already exists');
+    }
+
     const newGameState: GameState = {
-      gameId: Math.floor(10000 + Math.random() * 90000).toString(),
+      gameId,
       gameHost: socketId,
       gameStatus: GameStatus.CREATED,
       round: 0,

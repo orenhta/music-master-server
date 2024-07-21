@@ -19,6 +19,7 @@ import { AllowedGameStatus } from 'src/guards/allowed-game-status.decorator';
 import { GameStatus } from 'src/enums/game-status.enum';
 import { AllowedGameStatusGuard } from 'src/guards/allowed-game-status.guard';
 import { WsExceptionsFilter } from 'src/ws-exception.filter';
+import { GameClientEmittedEvents } from 'src/types/game-client-emitted-events.type';
 
 @WebSocketGateway({
   namespace: 'game-client',
@@ -28,7 +29,7 @@ import { WsExceptionsFilter } from 'src/ws-exception.filter';
 })
 @UseFilters(WsExceptionsFilter)
 export class GameClientGateway {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server: Server<GameClientEmittedEvents>;
 
   constructor(
     @Inject(forwardRef(() => GameClientService))

@@ -16,6 +16,7 @@ import { NextRoundResponse } from 'src/types/next-round-response.type';
 import { AllowedGameStatusGuard } from 'src/guards/allowed-game-status.guard';
 import { WsExceptionsFilter } from 'src/ws-exception.filter';
 import { SocketInRoomGuard } from 'src/guards/socket-in-room.guard';
+import { GameHostEmittedEvents } from 'src/types/game-host-emitted-events.type';
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -26,7 +27,7 @@ import { SocketInRoomGuard } from 'src/guards/socket-in-room.guard';
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
 export class GameManagerGateway {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server: Server<GameHostEmittedEvents>;
 
   constructor(private gameManagerService: GameManagerService) {}
 

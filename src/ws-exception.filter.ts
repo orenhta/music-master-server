@@ -1,7 +1,7 @@
 import { Catch, ArgumentsHost } from '@nestjs/common';
-import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
+import { BaseWsExceptionFilter } from '@nestjs/websockets';
 
-@Catch(WsException)
+@Catch()
 export class WsExceptionsFilter extends BaseWsExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     console.log('Event rejected, the following exception occured:', exception);

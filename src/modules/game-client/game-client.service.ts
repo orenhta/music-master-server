@@ -102,7 +102,7 @@ export class GameClientService {
           this.gameManagerGateway.server
             .to(gameState.gameHost)
             .emit('buzzer-revoked', {
-              playerName: player.userName,
+              answeredBy: player.userName,
             });
         }
       }

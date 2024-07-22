@@ -1,9 +1,9 @@
-import { EmittedEvents } from 'src/enums/emitted-events.enum';
+import { EmittedEvent } from 'src/enums/emitted-events.enum';
 
 export type GameClientEmittedEvents = {
-  [EmittedEvents.BUZZER_GRANTED]: () => void;
-  [EmittedEvents.BUZZER_REVOKED]: () => void;
-  [EmittedEvents.ROUND_STARTED]: () => void;
-  [EmittedEvents.ROUND_ENDED]: () => void;
-  [EmittedEvents.GAME_ENDED]: () => void;
+  [EmittedEvent.BUZZER_GRANTED]: () => void;
+  [EmittedEvent.BUZZER_REVOKED]: () => void;
+  [EmittedEvent.ROUND_STARTED]: () => void;
+  [EmittedEvent.ROUND_ENDED]: () => void;
+  [EmittedEvent.GAME_ENDED]: () => void;
 };

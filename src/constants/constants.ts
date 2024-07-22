@@ -1,1 +1,1 @@
-export const REDIS_SEPERATOR = ':';
+export const REDIS_SEPARATOR = ':';

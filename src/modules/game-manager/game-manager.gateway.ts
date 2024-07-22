@@ -25,7 +25,6 @@ import { GameHostEmittedEvents } from 'src/types/game-host-emitted-events.type';
   },
 })
 @UseFilters(WsExceptionsFilter)
-@WebSocketGateway()
 export class GameManagerGateway {
   @WebSocketServer() server: Server<GameHostEmittedEvents>;
 

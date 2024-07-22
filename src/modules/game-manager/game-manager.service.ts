@@ -9,7 +9,7 @@ import { GameStatus } from 'src/enums/game-status.enum';
 import { EndGameResponse } from 'src/types/end-game-response.type';
 import { WsException } from '@nestjs/websockets';
 import { NextRoundResponse } from 'src/types/next-round-response.type';
-import { EmittedEvents } from 'src/enums/emitted-events.enum';
+import { EmittedEvent } from 'src/enums/emitted-events.enum';
 
 @Injectable()
 export class GameManagerService {
@@ -107,7 +107,7 @@ export class GameManagerService {
       },
     });
 
-    this.gameClientGateway.server.in(gameId).emit(EmittedEvents.ROUND_STARTED);
+    this.gameClientGateway.server.in(gameId).emit(EmittedEvent.ROUND_STARTED);
   }
 
   async endRound(socketId: string): Promise<EndRoundResponse> {
@@ -125,7 +125,7 @@ export class GameManagerService {
       roundData: {},
     });
 
-    this.gameClientGateway.server.in(gameId).emit(EmittedEvents.ROUND_ENDED);
+    this.gameClientGateway.server.in(gameId).emit(EmittedEvent.ROUND_ENDED);
 
     return {
       songGuessedBy: gameState.roundData.songGuessedBy,
@@ -144,7 +144,7 @@ export class GameManagerService {
 
     await this.gameStateRepository.deleteGameState(gameId);
 
-    this.gameClientGateway.server.in(gameId).emit(EmittedEvents.GAME_ENDED);
+    this.gameClientGateway.server.in(gameId).emit(EmittedEvent.GAME_ENDED);
     this.gameClientGateway.server.in(gameId).socketsLeave(gameId);
 
     return {

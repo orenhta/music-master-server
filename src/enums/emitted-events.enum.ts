@@ -1,4 +1,4 @@
-export enum EmittedEvents {
+export enum EmittedEvent {
   BUZZER_GRANTED = 'buzzer-granted',
   BUZZER_REVOKED = 'buzzer-revoked',
   PLAYER_JOINED = 'player-joined',

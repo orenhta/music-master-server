@@ -9,7 +9,7 @@ import { EndRoundResponse } from 'src/types/end-round-response.type';
 import { GameManagerGateway } from '../game-manager/game-manager.gateway';
 import { WsException } from '@nestjs/websockets';
 import { isGameStateOfStatus } from 'src/functions/is-game-state-of-status';
-import { EmittedEvents } from 'src/enums/emitted-events.enum';
+import { EmittedEvent } from 'src/enums/emitted-events.enum';
 
 @Injectable()
 export class GameClientService {
@@ -42,7 +42,7 @@ export class GameClientService {
     this.gameStateRepository.addUserToGame(joinGameRequest, socketId);
     this.gameManagerGateway.server
       .to(gameState.gameHost)
-      .emit(EmittedEvents.PLAYER_JOINED, {
+      .emit(EmittedEvent.PLAYER_JOINED, {
         userName: joinGameRequest.playerName,
       });
   }
@@ -72,14 +72,14 @@ export class GameClientService {
 
     this.gameManagerGateway.server
       .to(gameState.gameHost)
-      .emit(EmittedEvents.BUZZER_GRANTED, {
+      .emit(EmittedEvent.BUZZER_GRANTED, {
         playerName: player.userName,
       });
 
     this.gameClientGateway.server
       .to(gameId)
       .except(socketId)
-      .emit(EmittedEvents.BUZZER_GRANTED);
+      .emit(EmittedEvent.BUZZER_GRANTED);
 
     setTimeout(async () => {
       const currentGameState =
@@ -102,11 +102,11 @@ export class GameClientService {
 
           this.gameClientGateway.server
             .to(gameId)
-            .emit(EmittedEvents.BUZZER_REVOKED);
+            .emit(EmittedEvent.BUZZER_REVOKED);
 
           this.gameManagerGateway.server
             .to(gameState.gameHost)
-            .emit(EmittedEvents.BUZZER_REVOKED, {
+            .emit(EmittedEvent.BUZZER_REVOKED, {
               answeredBy: player.userName,
             });
         }
@@ -173,8 +173,8 @@ export class GameClientService {
 
       this.gameManagerGateway.server
         .to(newGameState.gameHost)
-        .emit(EmittedEvents.ROUND_ENDED, endRoundResponse);
-      this.gameClientGateway.server.to(gameId).emit(EmittedEvents.ROUND_ENDED);
+        .emit(EmittedEvent.ROUND_ENDED, endRoundResponse);
+      this.gameClientGateway.server.to(gameId).emit(EmittedEvent.ROUND_ENDED);
     } else {
       this.gameStateRepository.saveGameState({
         ...newGameState,
@@ -186,10 +186,10 @@ export class GameClientService {
 
       this.gameClientGateway.server
         .to(gameId)
-        .emit(EmittedEvents.BUZZER_REVOKED);
+        .emit(EmittedEvent.BUZZER_REVOKED);
       this.gameManagerGateway.server
         .to(newGameState.gameHost)
-        .emit(EmittedEvents.BUZZER_REVOKED, {
+        .emit(EmittedEvent.BUZZER_REVOKED, {
           answeredBy: player.userName,
           ...(!gameState.roundData.artistGuessedBy &&
           newGameState.roundData.artistGuessedBy

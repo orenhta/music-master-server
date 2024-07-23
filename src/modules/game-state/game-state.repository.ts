@@ -11,11 +11,11 @@ import { GameState } from 'src/types/game-state.type';
 export class GameStateRepository {
   constructor(private readonly redis: Redis) {}
 
-  async saveGameState<T extends GameStatus>(newGameState: GameState<T>) {
-    if (
-      newGameState.gameStatus === GameStatus.CREATED &&
-      !newGameState.gamePlayers.length
-    ) {
+  async saveGameState<T extends GameStatus>(
+    newGameState: GameState<T>,
+    setHost = false,
+  ) {
+    if (setHost) {
       await this.redis.set(
         `${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${newGameState.gameHost}`,
         JSON.stringify({ gameId: newGameState.gameId, type: SocketType.HOST }),
@@ -76,10 +76,12 @@ export class GameStateRepository {
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
     );
     gameState.gamePlayers.forEach((player) => {
-      this.redis.del(`${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${player.id}`);
+      this.removeSocket(player.id);
     });
-    this.redis.del(
-      `${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${gameState.gameHost}`,
-    );
+    this.removeSocket(gameState.gameHost);
+  }
+
+  async removeSocket(socketId: string) {
+    this.redis.del(`${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${socketId}`);
   }
 }

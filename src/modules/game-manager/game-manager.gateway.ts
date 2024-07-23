@@ -1,5 +1,7 @@
 import {
   ConnectedSocket,
+  MessageBody,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -17,6 +19,10 @@ import { AllowedGameStatusGuard } from 'src/guards/allowed-game-status.guard';
 import { WsExceptionsFilter } from 'src/ws-exception.filter';
 import { SocketInRoomGuard } from 'src/guards/socket-in-room.guard';
 import { GameHostEmittedEvents } from 'src/types/game-host-emitted-events.type';
+import { GameExistsGuard } from '../game-client/guards/game-exists.guard';
+import { GameState } from 'src/types/game-state.type';
+import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
+import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -25,16 +31,35 @@ import { GameHostEmittedEvents } from 'src/types/game-host-emitted-events.type';
   },
 })
 @UseFilters(WsExceptionsFilter)
-export class GameManagerGateway {
+export class GameManagerGateway implements OnGatewayDisconnect {
   @WebSocketServer() server: Server<GameHostEmittedEvents>;
 
   constructor(private gameManagerService: GameManagerService) {}
+
+  handleDisconnect(client: Socket) {
+    this.gameManagerService.handleHostDisconnect(client.id);
+  }
 
   @SubscribeMessage('create-game')
   async handleCreateGame(
     @ConnectedSocket() client: Socket,
   ): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
+      client.id,
+    );
+
+    return gameCreationResponse;
+  }
+
+  @UseGuards(GameExistsGuard)
+  @SubscribeMessage('rejoin-game')
+  async handleRejoinGame(
+    @MessageBody(defaultValidationPipe)
+    payload: RejoinGameRequestDto,
+    @ConnectedSocket() client: Socket,
+  ): Promise<GameState> {
+    const gameCreationResponse = await this.gameManagerService.rejoinGame(
+      payload,
       client.id,
     );
 

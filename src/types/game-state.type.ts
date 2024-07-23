@@ -21,6 +21,7 @@ type RoundDataByGameStatus = {
 
 export type GameState<T extends GameStatus = GameStatus> = {
   gameId: string;
+  gameSecret: string;
   gameStatus: T;
   gameHost: string;
   gamePlayers: Player[];

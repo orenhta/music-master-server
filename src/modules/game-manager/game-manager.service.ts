@@ -10,6 +10,8 @@ import { EndGameResponse } from 'src/types/end-game-response.type';
 import { WsException } from '@nestjs/websockets';
 import { NextRoundResponse } from 'src/types/next-round-response.type';
 import { EmittedEvent } from 'src/enums/emitted-events.enum';
+import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class GameManagerService {
@@ -37,6 +39,7 @@ export class GameManagerService {
 
     const newGameState: GameState = {
       gameId,
+      gameSecret: uuid(),
       gameHost: socketId,
       gameStatus: GameStatus.CREATED,
       round: 0,
@@ -45,11 +48,44 @@ export class GameManagerService {
       roundData: {},
     };
 
-    this.gameStateRepository.saveGameState(newGameState);
+    this.gameStateRepository.saveGameState(newGameState, true);
 
     return {
       gameId: newGameState.gameId,
+      gameSecret: newGameState.gameSecret,
     };
+  }
+
+  async rejoinGame(
+    rejoinGameRequest: RejoinGameRequestDto,
+    socketId: string,
+  ): Promise<GameState> {
+    const gameState = await this.gameStateRepository.getGameState(
+      rejoinGameRequest.gameId,
+    );
+
+    if (gameState.gameSecret !== rejoinGameRequest.gameSecret) {
+      throw new WsException('Invalid game secret');
+    }
+
+    const isHostConnected =
+      !!(await this.gameStateRepository.getGameIdBySocketId(
+        gameState.gameHost,
+      ));
+
+    if (!isHostConnected) {
+      throw new WsException('Host is still connected');
+    }
+
+    const newGameState: GameState = {
+      ...gameState,
+      gameHost: socketId,
+      gameSecret: uuid(),
+    };
+
+    await this.gameStateRepository.saveGameState(newGameState, true);
+
+    return newGameState;
   }
 
   async nextRound(socketId: string): Promise<NextRoundResponse> {
@@ -150,5 +186,21 @@ export class GameManagerService {
     return {
       scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
     };
+  }
+
+  async handleHostDisconnect(socketId: string): Promise<void> {
+    const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
+    if (!gameId) {
+      await this.gameStateRepository.removeSocket(socketId);
+      return;
+    }
+
+    setTimeout(async () => {
+      const gameState = await this.gameStateRepository.getGameState(gameId);
+      if (gameState.gameHost === socketId) {
+        await this.endGame(socketId);
+      }
+      await this.gameStateRepository.removeSocket(socketId);
+    }, 15_000);
   }
 }

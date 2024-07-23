@@ -111,7 +111,7 @@ export class GameClientService {
             });
         }
       }
-    }, 15000);
+    }, 15_000);
   }
 
   async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {

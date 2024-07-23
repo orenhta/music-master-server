@@ -1,5 +1,6 @@
 import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { EndRoundResponse } from './end-round-response.type';
+import { Player } from './player.type';
 
 export type GameHostEmittedEvents = {
   [EmittedEvent.BUZZER_GRANTED]: (arg: { playerName: string }) => void;
@@ -10,4 +11,5 @@ export type GameHostEmittedEvents = {
   }) => void;
   [EmittedEvent.PLAYER_JOINED]: (arg: { userName: string }) => void;
   [EmittedEvent.ROUND_ENDED]: (arg: EndRoundResponse) => void;
+  [EmittedEvent.PLAYER_DISCONNECTED]: (arg: Player) => void;
 };

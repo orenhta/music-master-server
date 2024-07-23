@@ -5,5 +5,5 @@ export type EndRoundResponse = {
   songGuessedBy: string | null;
   artistGuessedBy: string | null;
   correctAnswer: Song;
-  scores: Omit<Player, 'id'>[];
+  scores: Player[];
 };

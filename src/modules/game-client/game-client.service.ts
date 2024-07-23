@@ -28,11 +28,11 @@ export class GameClientService {
       joinGameRequest.gameId,
     );
 
-    if (gameState.gamePlayers.some((player) => player.id === socketId)) {
+    if (gameState.gamePlayers[socketId]) {
       throw new WsException('Player already in game');
     }
     if (
-      gameState.gamePlayers.some(
+      Object.values(gameState.gamePlayers).some(
         (player) => player.userName === joinGameRequest.playerName,
       )
     ) {
@@ -54,9 +54,7 @@ export class GameClientService {
         gameId,
       );
 
-    const player = gameState.gamePlayers.find(
-      (player) => player.id === socketId,
-    )!;
+    const player = gameState.gamePlayers[socketId];
 
     const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
     const buzzerId = buzzersGranted.length;
@@ -120,9 +118,7 @@ export class GameClientService {
       await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
         gameId,
       );
-    const player = gameState.gamePlayers.find(
-      (player) => player.id === socketId,
-    )!;
+    const player = gameState.gamePlayers[socketId];
     const correctAnswer = gameState.roundData.currentCorrectAnswer;
     const newGameState = { ...gameState };
 
@@ -162,7 +158,7 @@ export class GameClientService {
         songGuessedBy: newGameState.roundData.songGuessedBy,
         artistGuessedBy: newGameState.roundData.artistGuessedBy,
         correctAnswer: newGameState.roundData.currentCorrectAnswer,
-        scores: newGameState.gamePlayers.map(({ id: _, ...player }) => player),
+        scores: Object.values(newGameState.gamePlayers),
       };
 
       await this.gameStateRepository.saveGameState({
@@ -201,5 +197,18 @@ export class GameClientService {
             : {}),
         });
     }
+  }
+
+  async handlePlayerDisconnect(socketId: string) {
+    const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
+    const gameState = await this.gameStateRepository.getGameState(gameId);
+    if (gameId) {
+      await this.gameStateRepository.removeGamePlayer(gameId, socketId);
+    }
+
+    this.gameManagerGateway.server.emit(
+      EmittedEvent.PLAYER_DISCONNECTED,
+      gameState.gamePlayers[socketId],
+    );
   }
 }

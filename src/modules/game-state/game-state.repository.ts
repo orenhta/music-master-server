@@ -50,11 +50,10 @@ export class GameStateRepository {
 
   async addUserToGame(joinGameRequest: JoinGameRequestDto, socketId: string) {
     await this.redis.call(
-      'JSON.ARRAPPEND',
+      'JSON.SET',
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${joinGameRequest.gameId}`,
-      '$.gamePlayers',
+      `$.gamePlayers.${socketId}`,
       JSON.stringify({
-        id: socketId,
         userName: joinGameRequest.playerName,
         score: 0,
       }),
@@ -75,10 +74,19 @@ export class GameStateRepository {
       'JSON.DEL',
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
     );
-    gameState.gamePlayers.forEach((player) => {
-      this.removeSocket(player.id);
+    Object.keys(gameState.gamePlayers).forEach((playerSocketId) => {
+      this.removeSocket(playerSocketId);
     });
     this.removeSocket(gameState.gameHost);
+  }
+
+  async removeGamePlayer(gameId: string, socketId: string) {
+    await this.redis.call(
+      'JSON.DEL',
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
+      `$.gamePlayers.${socketId}`,
+    );
+    this.removeSocket(socketId);
   }
 
   async removeSocket(socketId: string) {

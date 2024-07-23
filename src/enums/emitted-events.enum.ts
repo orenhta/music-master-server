@@ -5,4 +5,5 @@ export enum EmittedEvent {
   ROUND_ENDED = 'round-ended',
   ROUND_STARTED = 'round-started',
   GAME_ENDED = 'game-ended',
+  PLAYER_DISCONNECTED = 'player-disconnected',
 }

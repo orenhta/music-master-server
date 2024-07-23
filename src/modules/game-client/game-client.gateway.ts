@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -28,13 +29,17 @@ import { GameClientEmittedEvents } from 'src/types/game-client-emitted-events.ty
   },
 })
 @UseFilters(WsExceptionsFilter)
-export class GameClientGateway {
+export class GameClientGateway implements OnGatewayDisconnect {
   @WebSocketServer() server: Server<GameClientEmittedEvents>;
 
   constructor(
     @Inject(forwardRef(() => GameClientService))
-    private gameHostService: GameClientService,
+    private gameClientService: GameClientService,
   ) {}
+
+  async handleDisconnect(client: Socket) {
+    this.gameClientService.handlePlayerDisconnect(client.id);
+  }
 
   @AllowedGameStatus(GameStatus.CREATED)
   @UseGuards(GameExistsGuard, AllowedGameStatusGuard)
@@ -44,7 +49,7 @@ export class GameClientGateway {
     payload: JoinGameRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<boolean> {
-    await this.gameHostService.addUserToGame(payload, client.id);
+    await this.gameClientService.addUserToGame(payload, client.id);
     client.join(payload.gameId);
     return true;
   }
@@ -53,7 +58,7 @@ export class GameClientGateway {
   @UseGuards(SocketInRoomGuard, AllowedGameStatusGuard, BuzzerAvailableGuard)
   @SubscribeMessage('buzzer')
   async handleBuzzer(@ConnectedSocket() client: Socket): Promise<boolean> {
-    await this.gameHostService.handleBuzzerRequest(client.id);
+    await this.gameClientService.handleBuzzerRequest(client.id);
     return true;
   }
 
@@ -65,7 +70,7 @@ export class GameClientGateway {
     payload: AnswerRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<boolean> {
-    await this.gameHostService.handleAnswerRequest(payload, client.id);
+    await this.gameClientService.handleAnswerRequest(payload, client.id);
     return true;
   }
 }

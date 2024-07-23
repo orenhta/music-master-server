@@ -43,7 +43,7 @@ export class GameManagerService {
       gameHost: socketId,
       gameStatus: GameStatus.CREATED,
       round: 0,
-      gamePlayers: [],
+      gamePlayers: {},
       totalRounds: Object.keys(songsById).length,
       roundData: {},
     };
@@ -167,7 +167,7 @@ export class GameManagerService {
       songGuessedBy: gameState.roundData.songGuessedBy,
       artistGuessedBy: gameState.roundData.artistGuessedBy,
       correctAnswer,
-      scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
+      scores: Object.values(gameState.gamePlayers),
     };
   }
 
@@ -184,7 +184,7 @@ export class GameManagerService {
     this.gameClientGateway.server.in(gameId).socketsLeave(gameId);
 
     return {
-      scores: gameState.gamePlayers.map(({ id: _, ...player }) => player),
+      scores: Object.values(gameState.gamePlayers),
     };
   }
 

@@ -11,7 +11,7 @@ export type RoundInProgressData = RoundData & {
   artistGuessedBy: string | null;
   songGuessedBy: string | null;
   currentGuessingPlayer: string | null;
-  buzzersGranted: Player['id'][];
+  buzzersGranted: string[];
 };
 
 type RoundDataByGameStatus = {
@@ -24,7 +24,7 @@ export type GameState<T extends GameStatus = GameStatus> = {
   gameSecret: string;
   gameStatus: T;
   gameHost: string;
-  gamePlayers: Player[];
+  gamePlayers: Record<string, Player>;
   totalRounds: number;
   round: number;
   roundData: T extends keyof RoundDataByGameStatus

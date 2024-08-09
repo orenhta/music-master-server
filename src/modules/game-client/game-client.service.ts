@@ -104,6 +104,10 @@ export class GameClientService {
 
           gameState.gamePlayers[socketId].score += punishmentScore;
 
+          if (gameState.streak?.player === socketId) {
+            gameState.streak = undefined;
+          }
+
           this.gameStateRepository.saveGameState({
             ...gameState,
             roundData: {
@@ -146,10 +150,22 @@ export class GameClientService {
     const score = this.scoreService.getScoreForAnswer(
       isArtistCorrect,
       isTitleCorrect,
-      1,
+      gameState?.streak?.player === socketId ? gameState.streak.multiplier : 1,
       gameState.roundData.roundStartedAt,
       gameState.roundData.buzzerGrantedAt!,
     );
+
+    if (isArtistCorrect || isTitleCorrect) {
+      gameState.streak = {
+        player: socketId,
+        multiplier:
+          gameState?.streak?.player === socketId
+            ? gameState.streak.multiplier + 0.1
+            : 1.1,
+      };
+    } else if (gameState.streak?.player === socketId) {
+      gameState.streak = undefined;
+    }
 
     gameState.gamePlayers[socketId].score += score;
 

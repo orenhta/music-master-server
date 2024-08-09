@@ -15,9 +15,13 @@ export class ScoreService {
     buzzerGrantedAt: number,
   ): number {
     return isArtistCorrect || isTitleCorrect
-      ? this.getBaseScore(isArtistCorrect, isTitleCorrect) *
-          this.getTimeMultiplier(buzzerGrantedAt, roundStartedAt) *
-          streak
+      ? Number(
+          (
+            this.getBaseScore(isArtistCorrect, isTitleCorrect) *
+            this.getTimeMultiplier(buzzerGrantedAt, roundStartedAt) *
+            streak
+          ).toFixed(2),
+        )
       : this.getTimeBasedPunishmentScore(buzzerGrantedAt, roundStartedAt);
   }
 

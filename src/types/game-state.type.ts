@@ -26,6 +26,10 @@ export type GameState<T extends GameStatus = GameStatus> = {
   gameStatus: T;
   gameHost: string;
   gamePlayers: Record<string, Player>;
+  streak?: {
+    player: string;
+    multiplier: number;
+  };
   totalRounds: number;
   round: number;
   roundData: T extends keyof RoundDataByGameStatus

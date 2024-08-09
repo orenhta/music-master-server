@@ -12,6 +12,7 @@ export type RoundInProgressData = RoundData & {
   songGuessedBy: string | null;
   currentGuessingPlayer: string | null;
   buzzersGranted: string[];
+  buzzerGrantedAt: number | null;
 };
 
 type RoundDataByGameStatus = {

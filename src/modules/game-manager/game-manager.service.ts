@@ -140,6 +140,7 @@ export class GameManagerService {
         artistGuessedBy: null,
         songGuessedBy: null,
         buzzersGranted: [],
+        buzzerGrantedAt: null,
       },
     });
 

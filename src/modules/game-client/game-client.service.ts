@@ -10,14 +10,19 @@ import { GameManagerGateway } from '../game-manager/game-manager.gateway';
 import { WsException } from '@nestjs/websockets';
 import { isGameStateOfStatus } from 'src/functions/is-game-state-of-status';
 import { EmittedEvent } from 'src/enums/emitted-events.enum';
+import { ScoreService } from './score.service';
+import { AnswerValidatorService } from './answer-validator.service';
+import { AnswerReport } from 'src/types/answer-report.type';
 
 @Injectable()
 export class GameClientService {
   constructor(
     @Inject(forwardRef(() => GameClientGateway))
     private gameClientGateway: GameClientGateway,
-    private gameManagerGateway: GameManagerGateway,
+    private readonly gameManagerGateway: GameManagerGateway,
     private readonly gameStateRepository: GameStateRepository,
+    private readonly scoreService: ScoreService,
+    private readonly answerValidatorService: AnswerValidatorService,
   ) {}
 
   async addUserToGame(
@@ -58,6 +63,7 @@ export class GameClientService {
 
     const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
     const buzzerId = buzzersGranted.length;
+    const buzzerGrantedAt = Date.now();
 
     this.gameStateRepository.saveGameState({
       ...gameState,
@@ -65,6 +71,7 @@ export class GameClientService {
         ...gameState.roundData,
         currentGuessingPlayer: socketId,
         buzzersGranted,
+        buzzerGrantedAt,
       },
     });
 
@@ -90,6 +97,13 @@ export class GameClientService {
           currentGameState.roundData.currentGuessingPlayer === socketId &&
           currentBuzzerId === buzzerId
         ) {
+          const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
+            buzzerGrantedAt,
+            currentGameState.roundData.roundStartedAt,
+          );
+
+          gameState.gamePlayers[socketId].score += punishmentScore;
+
           this.gameStateRepository.saveGameState({
             ...gameState,
             roundData: {
@@ -109,7 +123,7 @@ export class GameClientService {
             });
         }
       }
-    }, 15_000);
+    }, 10_000);
   }
 
   async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {
@@ -120,62 +134,63 @@ export class GameClientService {
       );
     const player = gameState.gamePlayers[socketId];
     const correctAnswer = gameState.roundData.currentCorrectAnswer;
-    const newGameState = { ...gameState };
 
-    if (!newGameState.roundData.artistGuessedBy) {
-      const isArtistCorrect = answerRequest.answer
-        .toLowerCase()
-        .includes(correctAnswer.artist.toLowerCase());
+    const { isArtistCorrect, isTitleCorrect } =
+      this.answerValidatorService.validateAnswer(
+        answerRequest.answer,
+        correctAnswer,
+        !!gameState.roundData.artistGuessedBy,
+        !!gameState.roundData.songGuessedBy,
+      );
 
-      if (isArtistCorrect) {
-        newGameState.roundData = {
-          ...newGameState.roundData,
-          artistGuessedBy: player.userName,
-        };
-        player.score += 5;
-      }
-    }
+    const score = this.scoreService.getScoreForAnswer(
+      isArtistCorrect,
+      isTitleCorrect,
+      1,
+      gameState.roundData.roundStartedAt,
+      gameState.roundData.buzzerGrantedAt!,
+    );
 
-    if (!newGameState.roundData.songGuessedBy) {
-      const isTitleCorrect = answerRequest.answer
-        .toLowerCase()
-        .includes(correctAnswer.title.toLowerCase());
-
-      if (isTitleCorrect) {
-        newGameState.roundData = {
-          ...newGameState.roundData,
-          songGuessedBy: player.userName,
-        };
-        player.score += 10;
-      }
-    }
+    gameState.gamePlayers[socketId].score += score;
 
     if (
-      newGameState.roundData.artistGuessedBy &&
-      newGameState.roundData.songGuessedBy
+      (!!gameState.roundData.artistGuessedBy || isArtistCorrect) &&
+      (!!gameState.roundData.songGuessedBy || isTitleCorrect)
     ) {
       const endRoundResponse: EndRoundResponse = {
-        songGuessedBy: newGameState.roundData.songGuessedBy,
-        artistGuessedBy: newGameState.roundData.artistGuessedBy,
-        correctAnswer: newGameState.roundData.currentCorrectAnswer,
-        scores: Object.values(newGameState.gamePlayers),
+        songGuessedBy: gameState.roundData.songGuessedBy ?? player.userName,
+        artistGuessedBy: gameState.roundData.artistGuessedBy ?? player.userName,
+        correctAnswer: gameState.roundData.currentCorrectAnswer,
+        scores: Object.values(gameState.gamePlayers),
       };
 
       await this.gameStateRepository.saveGameState({
-        ...newGameState,
+        ...gameState,
         gameStatus: GameStatus.ROUND_ENDED,
         roundData: {},
       });
 
       this.gameManagerGateway.server
-        .to(newGameState.gameHost)
+        .to(gameState.gameHost)
         .emit(EmittedEvent.ROUND_ENDED, endRoundResponse);
       this.gameClientGateway.server.to(gameId).emit(EmittedEvent.ROUND_ENDED);
     } else {
+      const answerReport: AnswerReport = {
+        answeredBy: player.userName,
+      };
+      if (isArtistCorrect) {
+        gameState.roundData.artistGuessedBy = socketId;
+        answerReport.artist = correctAnswer.artist;
+      }
+      if (isTitleCorrect) {
+        gameState.roundData.songGuessedBy = socketId;
+        answerReport.title = correctAnswer.title;
+      }
+
       this.gameStateRepository.saveGameState({
-        ...newGameState,
+        ...gameState,
         roundData: {
-          ...newGameState.roundData,
+          ...gameState.roundData,
           currentGuessingPlayer: null,
         },
       });
@@ -184,18 +199,8 @@ export class GameClientService {
         .to(gameId)
         .emit(EmittedEvent.BUZZER_REVOKED);
       this.gameManagerGateway.server
-        .to(newGameState.gameHost)
-        .emit(EmittedEvent.BUZZER_REVOKED, {
-          answeredBy: player.userName,
-          ...(!gameState.roundData.artistGuessedBy &&
-          newGameState.roundData.artistGuessedBy
-            ? { artist: correctAnswer.artist }
-            : {}),
-          ...(!gameState.roundData.songGuessedBy &&
-          newGameState.roundData.songGuessedBy
-            ? { title: correctAnswer.title }
-            : {}),
-        });
+        .to(gameState.gameHost)
+        .emit(EmittedEvent.BUZZER_REVOKED, answerReport);
     }
   }
 

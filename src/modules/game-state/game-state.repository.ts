@@ -7,6 +7,8 @@ import { RedisDirectory } from 'src/enums/redis-directory.enum';
 import { SocketType } from 'src/enums/socket-type.enum';
 import { GameState } from 'src/types/game-state.type';
 
+const DEFAULT_EXPIRATION_TIME_SECONDS = 60 * 60 * 3; // 3 hours
+
 @Injectable()
 export class GameStateRepository {
   constructor(private readonly redis: Redis) {}
@@ -19,6 +21,8 @@ export class GameStateRepository {
       await this.redis.set(
         `${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${newGameState.gameHost}`,
         JSON.stringify({ gameId: newGameState.gameId, type: SocketType.HOST }),
+        'EX',
+        DEFAULT_EXPIRATION_TIME_SECONDS,
       );
     }
     await this.redis.call(
@@ -26,6 +30,10 @@ export class GameStateRepository {
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${newGameState.gameId}`,
       '$',
       JSON.stringify(newGameState),
+    );
+    this.redis.expire(
+      `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${newGameState.gameId}`,
+      DEFAULT_EXPIRATION_TIME_SECONDS,
     );
   }
 
@@ -65,6 +73,8 @@ export class GameStateRepository {
         gameId: joinGameRequest.gameId,
         type: SocketType.PLAYER,
       }),
+      'EX',
+      DEFAULT_EXPIRATION_TIME_SECONDS,
     );
   }
 

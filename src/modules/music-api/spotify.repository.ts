@@ -34,7 +34,7 @@ export class SpotifyRepository {
       undefined,
       undefined,
       // Although sdk limit is 50, their api allows up to 100
-      amount as MaxInt<50>,
+      100 as MaxInt<50>,
     );
 
     return data.items

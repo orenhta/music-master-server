@@ -7,7 +7,7 @@ export const spotifyConfig = registerAs('spotifyConfig', () => {
     [Genre.ROCK]: '3qu74M0PqlkSV76f98aqTd',
     [Genre.HIP_HOP]: '37i9dQZF1DXb8wplbC2YhV',
     [Genre.ELECTRONIC]: '1zsMB814a8VhwohGe2ZTpd',
-    [Genre.TOP_HITS]: '5m79BN5ud9f7oHELDiVUDT',
+    [Genre.TOP_HITS]: '5ABHKGoOzxkaa28ttQV9sE',
     [Genre.EIGHTIES]: '37i9dQZF1DXb57FjYWz00c',
   };
   return {

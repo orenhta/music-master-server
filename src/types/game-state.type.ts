@@ -3,21 +3,12 @@ import type { Player } from './player.type';
 import { Song } from './song.type';
 
 export type RoundData = {
-  currentCorrectAnswer: Song;
-};
-
-export type RoundInProgressData = RoundData & {
   roundStartedAt: number;
   artistGuessedBy: string | null;
   songGuessedBy: string | null;
   currentGuessingPlayer: string | null;
   buzzersGranted: string[];
   buzzerGrantedAt: number | null;
-};
-
-type RoundDataByGameStatus = {
-  [GameStatus.PENDING_ROUND_START]: RoundData;
-  [GameStatus.ROUND_IN_PROGRESS]: RoundInProgressData;
 };
 
 export type GameState<T extends GameStatus = GameStatus> = {
@@ -32,7 +23,8 @@ export type GameState<T extends GameStatus = GameStatus> = {
   };
   totalRounds: number;
   round: number;
-  roundData: T extends keyof RoundDataByGameStatus
-    ? RoundDataByGameStatus[T]
+  songs: Song[];
+  roundData: T extends GameStatus.ROUND_IN_PROGRESS
+    ? RoundData
     : Record<never, never>;
 };

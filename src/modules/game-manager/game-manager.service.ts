@@ -4,7 +4,6 @@ import { EndRoundResponse } from 'src/types/end-round-response.type';
 import { GameCreationResponse } from 'src/types/game-creation-response';
 import { GameStateRepository } from 'src/modules/game-state/game-state.repository';
 import { GameClientGateway } from 'src/modules/game-client/game-client.gateway';
-import { songsById } from 'src/songs/songs';
 import { GameStatus } from 'src/enums/game-status.enum';
 import { EndGameResponse } from 'src/types/end-game-response.type';
 import { WsException } from '@nestjs/websockets';
@@ -12,6 +11,8 @@ import { NextRoundResponse } from 'src/types/next-round-response.type';
 import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
+import { MusicApiService } from '../music-api/music-api.service';
+import { Genre } from 'src/enums/genre.enum';
 
 @Injectable()
 export class GameManagerService {
@@ -19,6 +20,7 @@ export class GameManagerService {
     @Inject(forwardRef(() => GameClientGateway))
     private gameClientGateway: GameClientGateway,
     private readonly gameStateRepository: GameStateRepository,
+    private readonly musicApiService: MusicApiService,
   ) {}
 
   async createGame(socketId: string): Promise<GameCreationResponse> {
@@ -37,6 +39,12 @@ export class GameManagerService {
       throw new WsException('gameId already exists');
     }
 
+    const totalRounds = 5;
+    const songs = await this.musicApiService.getSongsByGenre(
+      totalRounds,
+      Genre.TOP_HITS,
+    );
+
     const newGameState: GameState = {
       gameId,
       gameSecret: uuid(),
@@ -44,7 +52,8 @@ export class GameManagerService {
       gameStatus: GameStatus.CREATED,
       round: 0,
       gamePlayers: {},
-      totalRounds: Object.keys(songsById).length,
+      totalRounds,
+      songs,
       roundData: {},
     };
 
@@ -99,11 +108,11 @@ export class GameManagerService {
     }
 
     const nextRound = gameState.round + 1;
-    const song = songsById[nextRound];
+    const song = gameState.songs[nextRound - 1];
 
     const nextRoundResponse: NextRoundResponse = {
       round: nextRound,
-      songId: nextRound,
+      previewUrl: song.previewUrl,
     };
 
     await this.gameStateRepository.saveGameState({
@@ -112,7 +121,6 @@ export class GameManagerService {
       round: nextRoundResponse.round,
       roundData: {
         ...gameState.roundData,
-        currentCorrectAnswer: song,
       },
     });
 
@@ -154,7 +162,7 @@ export class GameManagerService {
         gameId,
       );
 
-    const correctAnswer = gameState.roundData.currentCorrectAnswer;
+    const correctAnswer = gameState.songs[gameState.round - 1];
 
     await this.gameStateRepository.saveGameState({
       ...gameState,

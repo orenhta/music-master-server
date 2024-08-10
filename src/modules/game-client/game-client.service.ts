@@ -137,7 +137,7 @@ export class GameClientService {
         gameId,
       );
     const player = gameState.gamePlayers[socketId];
-    const correctAnswer = gameState.roundData.currentCorrectAnswer;
+    const correctAnswer = gameState.songs[gameState.round - 1];
 
     const { isArtistCorrect, isTitleCorrect } =
       this.answerValidatorService.validateAnswer(
@@ -176,7 +176,7 @@ export class GameClientService {
       const endRoundResponse: EndRoundResponse = {
         songGuessedBy: gameState.roundData.songGuessedBy ?? player.userName,
         artistGuessedBy: gameState.roundData.artistGuessedBy ?? player.userName,
-        correctAnswer: gameState.roundData.currentCorrectAnswer,
+        correctAnswer: gameState.songs[gameState.round - 1],
         scores: Object.values(gameState.gamePlayers),
       };
 

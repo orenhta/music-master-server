@@ -1,4 +1,4 @@
 export type NextRoundResponse = {
   round: number;
-  songId: number;
+  previewUrl: string;
 };

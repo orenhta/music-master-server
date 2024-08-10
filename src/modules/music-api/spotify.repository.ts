@@ -56,6 +56,7 @@ export class SpotifyRepository {
           .replace(/[^a-zA-Z0-9\s]/g, '')
           .trim(),
         previewUrl: track.preview_url!,
+        albumCoverUrl: track.album?.images?.[0]?.url,
       }));
   }
 }

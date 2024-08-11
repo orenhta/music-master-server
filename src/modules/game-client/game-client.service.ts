@@ -227,9 +227,11 @@ export class GameClientService {
       await this.gameStateRepository.removeGamePlayer(gameId, socketId);
     }
 
-    this.gameManagerGateway.server.emit(
-      EmittedEvent.PLAYER_DISCONNECTED,
-      gameState.gamePlayers[socketId],
-    );
+    if (gameState?.gamePlayers?.[socketId]) {
+      this.gameManagerGateway.server.emit(
+        EmittedEvent.PLAYER_DISCONNECTED,
+        gameState.gamePlayers[socketId],
+      );
+    }
   }
 }

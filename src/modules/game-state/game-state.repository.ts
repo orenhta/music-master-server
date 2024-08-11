@@ -25,14 +25,10 @@ export class GameStateRepository {
         DEFAULT_EXPIRATION_TIME_SECONDS,
       );
     }
-    await this.redis.call(
-      'JSON.SET',
+    await this.redis.set(
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${newGameState.gameId}`,
-      '$',
       JSON.stringify(newGameState),
-    );
-    this.redis.expire(
-      `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${newGameState.gameId}`,
+      'EX',
       DEFAULT_EXPIRATION_TIME_SECONDS,
     );
   }
@@ -40,10 +36,9 @@ export class GameStateRepository {
   async getGameState<T extends GameStatus = GameStatus>(
     gameId: string,
   ): Promise<GameState<T>> {
-    const res = (await this.redis.call(
-      'JSON.GET',
+    const res = await this.redis.get(
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
-    )) as string;
+    );
 
     return JSON.parse(res!) as GameState<T>;
   }
@@ -57,15 +52,15 @@ export class GameStateRepository {
   }
 
   async addUserToGame(joinGameRequest: JoinGameRequestDto, socketId: string) {
-    await this.redis.call(
-      'JSON.SET',
-      `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${joinGameRequest.gameId}`,
-      `$.gamePlayers.${socketId}`,
-      JSON.stringify({
-        userName: joinGameRequest.playerName,
-        score: 0,
-      }),
-    );
+    const gameState = await this.getGameState(joinGameRequest.gameId);
+
+    await this.saveGameState({
+      ...gameState,
+      gamePlayers: {
+        ...gameState.gamePlayers,
+        [socketId]: { userName: joinGameRequest.playerName, score: 0 },
+      },
+    });
 
     await this.redis.set(
       `${RedisDirectory.SOCKETS}${REDIS_SEPARATOR}${socketId}`,
@@ -80,8 +75,7 @@ export class GameStateRepository {
 
   async deleteGameState(gameId: string) {
     const gameState = await this.getGameState(gameId);
-    await this.redis.call(
-      'JSON.DEL',
+    await this.redis.del(
       `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
     );
     Object.keys(gameState.gamePlayers).forEach((playerSocketId) => {
@@ -91,11 +85,14 @@ export class GameStateRepository {
   }
 
   async removeGamePlayer(gameId: string, socketId: string) {
-    await this.redis.call(
-      'JSON.DEL',
-      `${RedisDirectory.GAME_STATE}${REDIS_SEPARATOR}${gameId}`,
-      `$.gamePlayers.${socketId}`,
-    );
+    const gameState = await this.getGameState(gameId);
+    const { [socketId]: _, ...gamePlayers } = gameState.gamePlayers;
+
+    await this.saveGameState({
+      ...gameState,
+      gamePlayers,
+    });
+
     this.removeSocket(socketId);
   }
 

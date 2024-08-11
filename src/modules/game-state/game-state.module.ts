@@ -15,10 +15,6 @@ import { redisConfig } from 'src/config/redis.config';
           port: config.port,
         });
 
-        redisInstance.on('error', (e) => {
-          throw new Error(`Redis connection failed: ${e}`);
-        });
-
         return redisInstance;
       },
       inject: [redisConfig.KEY],

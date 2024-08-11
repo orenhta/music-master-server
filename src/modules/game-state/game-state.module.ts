@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common';
 import { GameStateRepository } from './game-state.repository';
 import Redis from 'ioredis';
+import { ConfigModule, ConfigType } from '@nestjs/config';
+import { redisConfig } from 'src/config/redis.config';
 
 @Module({
+  imports: [ConfigModule.forFeature(redisConfig)],
   providers: [
     {
       provide: Redis,
-      useFactory: () => {
+      useFactory: (config: ConfigType<typeof redisConfig>) => {
         const redisInstance = new Redis({
-          host: 'localhost',
-          port: 6379,
+          host: config.host,
+          port: config.port,
         });
 
         redisInstance.on('error', (e) => {
@@ -18,7 +21,7 @@ import Redis from 'ioredis';
 
         return redisInstance;
       },
-      inject: [],
+      inject: [redisConfig.KEY],
     },
     GameStateRepository,
   ],

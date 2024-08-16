@@ -21,6 +21,18 @@ export class SpotifyRepository {
     this.playlistIdByGenre = config.playlistIdByGenre;
   }
 
+  async getTopPlaylists(){
+    return await this.spotify.browse.getFeaturedPlaylists('IL',undefined, undefined, 10);
+  }
+
+  async getMasterPlaylists(){
+    return await Promise.all(
+      Object.values(this.config.playlistIdByGenre).map(
+        async(id) => await this.spotify.playlists.getPlaylist(id)
+      )
+    )
+  }
+
   getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
     return this.getSongsByPlaylistId(amount, this.playlistIdByGenre[genre]);
   }
@@ -49,11 +61,11 @@ export class SpotifyRepository {
       .map(({ track }) => ({
         title: track.name
           .match(/^[^(]+/)![0]
-          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/[^a-zA-Z0-9א-ת\s]/g, '')
           .trim(),
         artist: track.artists[0].name
           .match(/^[^(]+/)![0]
-          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/[^a-zA-Z0-9א-ת\s]/g, '')
           .trim(),
         previewUrl: track.preview_url!,
         albumCoverUrl: track.album?.images?.[0]?.url,

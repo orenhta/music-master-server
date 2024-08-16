@@ -12,7 +12,8 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
 import { MusicApiService } from '../music-api/music-api.service';
-import { Genre } from 'src/enums/genre.enum';
+import { MaxInt } from '@spotify/web-api-ts-sdk';
+import { GameSettingsDto } from 'src/dto/game-settings.dto';
 
 @Injectable()
 export class GameManagerService {
@@ -23,7 +24,15 @@ export class GameManagerService {
     private readonly musicApiService: MusicApiService,
   ) {}
 
-  async createGame(socketId: string): Promise<GameCreationResponse> {
+  async getTopPlaylists(){
+    return await this.musicApiService.getTopPlaylists();
+  }
+
+  async getMasterPlaylists(){
+    return await this.musicApiService.getMasterPlaylists();
+  }
+
+  async createGame(socketId: string, gameSettings : GameSettingsDto): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');
     }
@@ -38,11 +47,9 @@ export class GameManagerService {
     if (gameIdExists) {
       throw new WsException('gameId already exists');
     }
-
-    const totalRounds = 5;
-    const songs = await this.musicApiService.getSongsByGenre(
-      totalRounds,
-      Genre.TOP_HITS,
+    const songs = await this.musicApiService.getSongsByClientPlaylist(
+      gameSettings.totalRounds as MaxInt<100>,
+      gameSettings.playlistId
     );
 
     const newGameState: GameState = {
@@ -52,7 +59,7 @@ export class GameManagerService {
       gameStatus: GameStatus.CREATED,
       round: 0,
       gamePlayers: {},
-      totalRounds,
+      totalRounds : gameSettings.totalRounds,
       songs,
       roundData: {},
     };

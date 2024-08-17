@@ -13,6 +13,7 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { ScoreService } from './score.service';
 import { AnswerValidatorService } from './answer-validator.service';
 import { AnswerReport } from 'src/types/answer-report.type';
+import { Player } from 'src/types/player.type';
 
 @Injectable()
 export class GameClientService {
@@ -55,79 +56,95 @@ export class GameClientService {
   async handleBuzzerRequest(socketId: string) {
     const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
     const gameState =
-      await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
-        gameId,
-      );
+        await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
+          gameId,
+        );
+    const player: Player = gameState.gamePlayers[socketId];
 
-    const player = gameState.gamePlayers[socketId];
+    if (socketId === gameState.roundData.buzzersGranted[gameState.roundData.buzzersGranted.length]){
+      const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
+      const buzzerId = buzzersGranted.length;
+      const buzzerGrantedAt = Date.now();
 
-    const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
-    const buzzerId = buzzersGranted.length;
-    const buzzerGrantedAt = Date.now();
-
-    this.gameStateRepository.saveGameState({
-      ...gameState,
-      roundData: {
-        ...gameState.roundData,
-        currentGuessingPlayer: socketId,
-        buzzersGranted,
-        buzzerGrantedAt,
-      },
-    });
-
-    this.gameManagerGateway.server
-      .to(gameState.gameHost)
-      .emit(EmittedEvent.BUZZER_GRANTED, {
-        playerName: player.userName,
+      this.gameStateRepository.saveGameState({
+        ...gameState,
+        roundData: {
+          ...gameState.roundData,
+          currentGuessingPlayer: socketId,
+          buzzersGranted,
+          buzzerGrantedAt,
+        },
       });
 
-    this.gameClientGateway.server
-      .to(gameId)
-      .except(socketId)
-      .emit(EmittedEvent.BUZZER_GRANTED);
+      this.gameManagerGateway.server
+        .to(gameState.gameHost)
+        .emit(EmittedEvent.BUZZER_GRANTED, {
+          playerName: player.userName,
+        });
 
-    setTimeout(async () => {
-      const currentGameState =
-        await this.gameStateRepository.getGameState(gameId);
-      if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
-        const currentBuzzerId =
-          currentGameState.roundData.buzzersGranted.length;
-        if (
-          currentGameState.round === gameState.round &&
-          currentGameState.roundData.currentGuessingPlayer === socketId &&
-          currentBuzzerId === buzzerId
-        ) {
-          const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
-            buzzerGrantedAt,
-            currentGameState.roundData.roundStartedAt,
-          );
+      this.gameClientGateway.server
+        .to(gameId)
+        .except(socketId)
+        .emit(EmittedEvent.BUZZER_GRANTED);
 
-          gameState.gamePlayers[socketId].score += punishmentScore;
+      setTimeout(async () => {
+        const currentGameState =
+          await this.gameStateRepository.getGameState(gameId);
+        if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
+          const currentBuzzerId =
+            currentGameState.roundData.buzzersGranted.length;
+          if (
+            currentGameState.round === gameState.round &&
+            currentGameState.roundData.currentGuessingPlayer === socketId &&
+            currentBuzzerId === buzzerId
+          ) {
+            if (currentGameState.isPunishmentScoreAllowed) {
+              const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
+                buzzerGrantedAt,
+                currentGameState.roundData.roundStartedAt,
+              );
+    
+              gameState.gamePlayers[socketId].score += punishmentScore;
+            }
 
-          if (gameState.streak?.player === socketId) {
-            gameState.streak = undefined;
-          }
+            if (gameState.streak?.player === socketId) {
+              gameState.streak = undefined;
+            }
 
-          this.gameStateRepository.saveGameState({
-            ...gameState,
-            roundData: {
-              ...gameState.roundData,
-              currentGuessingPlayer: null,
-            },
-          });
-
-          this.gameClientGateway.server
-            .to(gameId)
-            .emit(EmittedEvent.BUZZER_REVOKED);
-
-          this.gameManagerGateway.server
-            .to(gameState.gameHost)
-            .emit(EmittedEvent.BUZZER_REVOKED, {
-              answeredBy: player.userName,
+            this.gameStateRepository.saveGameState({
+              ...gameState,
+              roundData: {
+                ...gameState.roundData,
+                currentGuessingPlayer: null,
+              },
             });
+
+            this.gameClientGateway.server
+              .to(gameId)
+              .emit(EmittedEvent.BUZZER_REVOKED);
+
+            this.gameManagerGateway.server
+              .to(gameState.gameHost)
+              .emit(EmittedEvent.BUZZER_REVOKED, {
+                answeredBy: player.userName,
+              });
+          }
         }
-      }
-    }, 10_000);
+      }, 10_000);
+    } else {
+      setTimeout(async () => {
+        this.gameClientGateway.server
+              .to(gameId)
+              .emit(EmittedEvent.BUZZER_CONFLICT);
+
+        this.gameManagerGateway.server
+          .to(gameState.gameHost)
+          .emit(EmittedEvent.BUZZER_CONFLICT, {
+            playerName: player.userName,
+          });
+      }, 10_000)
+      
+    }
   }
 
   async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {
@@ -153,6 +170,8 @@ export class GameClientService {
       gameState?.streak?.player === socketId ? gameState.streak.multiplier : 1,
       gameState.roundData.roundStartedAt,
       gameState.roundData.buzzerGrantedAt!,
+      gameState.isTimeBasedScore,
+      gameState.isPunishmentScoreAllowed
     );
 
     if (isArtistCorrect || isTitleCorrect) {

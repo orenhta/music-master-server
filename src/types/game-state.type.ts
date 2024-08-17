@@ -27,4 +27,7 @@ export type GameState<T extends GameStatus = GameStatus> = {
   roundData: T extends GameStatus.ROUND_IN_PROGRESS
     ? RoundData
     : Record<never, never>;
+  isTimeBasedScore: boolean;
+  isPunishmentScoreAllowed: boolean;
+  allowBuzzerTwice: boolean;
 };

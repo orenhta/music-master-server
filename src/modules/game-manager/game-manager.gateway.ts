@@ -43,6 +43,7 @@ export class GameManagerGateway implements OnGatewayDisconnect {
 
   @SubscribeMessage('create-game')
   async handleCreateGame(
+    @MessageBody(defaultValidationPipe)
     payload: CreateGameRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<GameCreationResponse> {

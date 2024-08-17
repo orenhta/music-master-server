@@ -61,7 +61,7 @@ export class GameClientService {
         );
     const player: Player = gameState.gamePlayers[socketId];
 
-    if (socketId === gameState.roundData.buzzersGranted[gameState.roundData.buzzersGranted.length]){
+    if (socketId === gameState.roundData.buzzersGranted[gameState.roundData.buzzersGranted.length - 1]){
       const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
       const buzzerId = buzzersGranted.length;
       const buzzerGrantedAt = Date.now();

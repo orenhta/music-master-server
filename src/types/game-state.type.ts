@@ -29,5 +29,5 @@ export type GameState<T extends GameStatus = GameStatus> = {
     : Record<never, never>;
   isTimeBasedScore: boolean;
   isPunishmentScoreAllowed: boolean;
-  allowBuzzerTwice: boolean;
+  isBuzzerTwiceAllowed: boolean;
 };

@@ -11,5 +11,5 @@ export class CreateGameRequestDto {
 
     @IsNotEmpty()
     @IsBoolean()
-    allowBuzzerTwice: boolean;
+    isBuzzerTwiceAllowed: boolean;
 }

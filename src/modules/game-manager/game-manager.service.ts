@@ -32,6 +32,10 @@ export class GameManagerService {
     return await this.musicApiService.getMasterPlaylists();
   }
 
+  async getMyPlaylists(accessToken : string){
+    return await this.musicApiService.getMyPlaylists(accessToken);
+  }
+
   async createGame(socketId: string, gameSettings : GameSettingsDto): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');

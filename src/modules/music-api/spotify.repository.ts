@@ -1,9 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { MaxInt, Playlist, SpotifyApi, Track } from '@spotify/web-api-ts-sdk';
 import { spotifyConfig } from 'src/config/spotify.config';
 import { Genre } from 'src/enums/genre.enum';
 import { Song } from 'src/types/song.type';
+import axios from 'axios';
+
+export interface SpotifyAuthResponse {
+  access_token : string,
+  refresh_token : string
+}
 
 @Injectable()
 export class SpotifyRepository {
@@ -31,6 +37,14 @@ export class SpotifyRepository {
         async(id) => await this.spotify.playlists.getPlaylist(id)
       )
     )
+  }
+
+  async getMyPlaylists(accessToken : string) : Promise<{items : Playlist<Track>[]}>{
+    return (await axios.get('https://api.spotify.com/v1/me/playlists', {
+      headers :{
+        Authorization : `Bearer ${accessToken}`
+      }
+    })).data;
   }
 
   getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {

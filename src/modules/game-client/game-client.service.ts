@@ -61,90 +61,75 @@ export class GameClientService {
         );
     const player: Player = gameState.gamePlayers[socketId];
 
-    if (socketId === gameState.roundData.buzzersGranted[gameState.roundData.buzzersGranted.length - 1]){
-      const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
-      const buzzerId = buzzersGranted.length;
-      const buzzerGrantedAt = Date.now();
+    const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
+    const buzzerId = buzzersGranted.length;
+    const buzzerGrantedAt = Date.now();
 
-      this.gameStateRepository.saveGameState({
-        ...gameState,
-        roundData: {
-          ...gameState.roundData,
-          currentGuessingPlayer: socketId,
-          buzzersGranted,
-          buzzerGrantedAt,
-        },
+    this.gameStateRepository.saveGameState({
+      ...gameState,
+      roundData: {
+        ...gameState.roundData,
+        currentGuessingPlayer: socketId,
+        buzzersGranted,
+        buzzerGrantedAt,
+      },
+    });
+
+    this.gameManagerGateway.server
+      .to(gameState.gameHost)
+      .emit(EmittedEvent.BUZZER_GRANTED, {
+        playerName: player.userName,
       });
 
-      this.gameManagerGateway.server
-        .to(gameState.gameHost)
-        .emit(EmittedEvent.BUZZER_GRANTED, {
-          playerName: player.userName,
-        });
+    this.gameClientGateway.server
+      .to(gameId)
+      .except(socketId)
+      .emit(EmittedEvent.BUZZER_GRANTED);
 
-      this.gameClientGateway.server
-        .to(gameId)
-        .except(socketId)
-        .emit(EmittedEvent.BUZZER_GRANTED);
-
-      setTimeout(async () => {
-        const currentGameState =
-          await this.gameStateRepository.getGameState(gameId);
-        if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
-          const currentBuzzerId =
-            currentGameState.roundData.buzzersGranted.length;
-          if (
-            currentGameState.round === gameState.round &&
-            currentGameState.roundData.currentGuessingPlayer === socketId &&
-            currentBuzzerId === buzzerId
-          ) {
-            if (currentGameState.isPunishmentScoreAllowed) {
-              const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
-                buzzerGrantedAt,
-                currentGameState.roundData.roundStartedAt,
-              );
-    
-              gameState.gamePlayers[socketId].score += punishmentScore;
-            }
-
-            if (gameState.streak?.player === socketId) {
-              gameState.streak = undefined;
-            }
-
-            this.gameStateRepository.saveGameState({
-              ...gameState,
-              roundData: {
-                ...gameState.roundData,
-                currentGuessingPlayer: null,
-              },
-            });
-
-            this.gameClientGateway.server
-              .to(gameId)
-              .emit(EmittedEvent.BUZZER_REVOKED);
-
-            this.gameManagerGateway.server
-              .to(gameState.gameHost)
-              .emit(EmittedEvent.BUZZER_REVOKED, {
-                answeredBy: player.userName,
-              });
+    setTimeout(async () => {
+      const currentGameState =
+        await this.gameStateRepository.getGameState(gameId);
+      if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
+        const currentBuzzerId =
+          currentGameState.roundData.buzzersGranted.length;
+        if (
+          currentGameState.round === gameState.round &&
+          currentGameState.roundData.currentGuessingPlayer === socketId &&
+          currentBuzzerId === buzzerId
+        ) {
+          if (currentGameState.isPunishmentScoreAllowed) {
+            const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
+              buzzerGrantedAt,
+              currentGameState.roundData.roundStartedAt,
+            );
+  
+            gameState.gamePlayers[socketId].score += punishmentScore;
           }
-        }
-      }, 10_000);
-    } else {
-      setTimeout(async () => {
-        this.gameClientGateway.server
-              .to(gameId)
-              .emit(EmittedEvent.BUZZER_CONFLICT);
 
-        this.gameManagerGateway.server
-          .to(gameState.gameHost)
-          .emit(EmittedEvent.BUZZER_CONFLICT, {
-            playerName: player.userName,
+          if (gameState.streak?.player === socketId) {
+            gameState.streak = undefined;
+          }
+
+          this.gameStateRepository.saveGameState({
+            ...gameState,
+            roundData: {
+              ...gameState.roundData,
+              currentGuessingPlayer: null,
+            },
           });
-      }, 10_000)
-      
-    }
+
+          this.gameClientGateway.server
+            .to(gameId)
+            .emit(EmittedEvent.BUZZER_REVOKED);
+
+          this.gameManagerGateway.server
+            .to(gameState.gameHost)
+            .emit(EmittedEvent.BUZZER_REVOKED, {
+              answeredBy: player.userName,
+            });
+        }
+      }
+    }, 10_000);
   }
 
   async handleAnswerRequest(answerRequest: AnswerRequestDto, socketId: string) {

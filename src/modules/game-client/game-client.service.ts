@@ -97,7 +97,7 @@ export class GameClientService {
           currentGameState.roundData.currentGuessingPlayer === socketId &&
           currentBuzzerId === buzzerId
         ) {
-          if (currentGameState.isPunishmentScoreAllowed) {
+          if (currentGameState.gameSettings.isPunishmentScoreAllowed) {
             const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
               buzzerGrantedAt,
               currentGameState.roundData.roundStartedAt,
@@ -155,8 +155,8 @@ export class GameClientService {
       gameState?.streak?.player === socketId ? gameState.streak.multiplier : 1,
       gameState.roundData.roundStartedAt,
       gameState.roundData.buzzerGrantedAt!,
-      gameState.isTimeBasedScore,
-      gameState.isPunishmentScoreAllowed
+      gameState.gameSettings.isTimeBasedScore,
+      gameState.gameSettings.isPunishmentScoreAllowed
     );
 
     if (isArtistCorrect || isTitleCorrect) {

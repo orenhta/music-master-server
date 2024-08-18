@@ -25,7 +25,7 @@ export class BuzzerAvailableGuard implements CanActivate {
       );
     const currentGuessingPlayer = gameState.roundData.currentGuessingPlayer;
 
-    if ((!gameState.isBuzzerTwiceAllowed) && socket.id !== _.last(gameState.roundData.buzzersGranted)) {
+    if ((!gameState.gameSettings.isBuzzerTwiceAllowed) && socket.id !== _.last(gameState.roundData.buzzersGranted)) {
       throw new WsException('Player cannot take buzzer twice');
     }
 

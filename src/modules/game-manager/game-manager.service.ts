@@ -56,9 +56,11 @@ export class GameManagerService {
       totalRounds,
       songs,
       roundData: {},
-      isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
-      isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
-      isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed
+      gameSettings: {
+        isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
+        isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
+        isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed
+      }
     };
 
     this.gameStateRepository.saveGameState(newGameState, true);

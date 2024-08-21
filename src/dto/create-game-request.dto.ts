@@ -1,12 +1,12 @@
-import { IsBoolean, IsNotEmpty } from "class-validator";
+import { IsBoolean } from 'class-validator';
 
 export class CreateGameRequestDto {
-    @IsBoolean()
-    isTimeBasedScore: boolean;
+  @IsBoolean()
+  isTimeBasedScore: boolean;
 
-    @IsBoolean()
-    isPunishmentScoreAllowed: boolean;
+  @IsBoolean()
+  isPunishmentScoreAllowed: boolean;
 
-    @IsBoolean()
-    isBuzzerTwiceAllowed: boolean;
+  @IsBoolean()
+  isBuzzerTwiceAllowed: boolean;
 }

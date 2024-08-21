@@ -34,4 +34,4 @@ export type GameSettings = {
   isTimeBasedScore: boolean;
   isPunishmentScoreAllowed: boolean;
   isBuzzerTwiceAllowed: boolean;
-}
+};

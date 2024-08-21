@@ -48,7 +48,8 @@ export class GameManagerGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
-      client.id, payload
+      client.id,
+      payload,
     );
 
     return gameCreationResponse;

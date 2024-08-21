@@ -24,7 +24,10 @@ export class GameManagerService {
     private readonly musicApiService: MusicApiService,
   ) {}
 
-  async createGame(socketId: string, createGameRequestDto: CreateGameRequestDto): Promise<GameCreationResponse> {
+  async createGame(
+    socketId: string,
+    createGameRequestDto: CreateGameRequestDto,
+  ): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');
     }
@@ -57,10 +60,8 @@ export class GameManagerService {
       songs,
       roundData: {},
       gameSettings: {
-        isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
-        isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
-        isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed
-      }
+        ...createGameRequestDto,
+      },
     };
 
     this.gameStateRepository.saveGameState(newGameState, true);

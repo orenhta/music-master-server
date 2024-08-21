@@ -23,6 +23,7 @@ import { GameExistsGuard } from '../game-client/guards/game-exists.guard';
 import { GameState } from 'src/types/game-state.type';
 import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
+import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -42,10 +43,12 @@ export class GameManagerGateway implements OnGatewayDisconnect {
 
   @SubscribeMessage('create-game')
   async handleCreateGame(
+    @MessageBody(defaultValidationPipe)
+    payload: CreateGameRequestDto,
     @ConnectedSocket() client: Socket,
   ): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
-      client.id,
+      client.id, payload
     );
 
     return gameCreationResponse;

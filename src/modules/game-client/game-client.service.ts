@@ -13,6 +13,7 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { ScoreService } from './score.service';
 import { AnswerValidatorService } from './answer-validator.service';
 import { AnswerReport } from 'src/types/answer-report.type';
+import { Player } from 'src/types/player.type';
 
 @Injectable()
 export class GameClientService {
@@ -55,11 +56,10 @@ export class GameClientService {
   async handleBuzzerRequest(socketId: string) {
     const gameId = await this.gameStateRepository.getGameIdBySocketId(socketId);
     const gameState =
-      await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
-        gameId,
-      );
-
-    const player = gameState.gamePlayers[socketId];
+        await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
+          gameId,
+        );
+    const player: Player = gameState.gamePlayers[socketId];
 
     const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
     const buzzerId = buzzersGranted.length;
@@ -97,12 +97,14 @@ export class GameClientService {
           currentGameState.roundData.currentGuessingPlayer === socketId &&
           currentBuzzerId === buzzerId
         ) {
-          const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
-            buzzerGrantedAt,
-            currentGameState.roundData.roundStartedAt,
-          );
-
-          gameState.gamePlayers[socketId].score += punishmentScore;
+          if (currentGameState.gameSettings.isPunishmentScoreAllowed) {
+            const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
+              buzzerGrantedAt,
+              currentGameState.roundData.roundStartedAt,
+            );
+  
+            gameState.gamePlayers[socketId].score += punishmentScore;
+          }
 
           if (gameState.streak?.player === socketId) {
             gameState.streak = undefined;
@@ -153,6 +155,8 @@ export class GameClientService {
       gameState?.streak?.player === socketId ? gameState.streak.multiplier : 1,
       gameState.roundData.roundStartedAt,
       gameState.roundData.buzzerGrantedAt!,
+      gameState.gameSettings.isTimeBasedScore,
+      gameState.gameSettings.isPunishmentScoreAllowed
     );
 
     if (isArtistCorrect || isTitleCorrect) {

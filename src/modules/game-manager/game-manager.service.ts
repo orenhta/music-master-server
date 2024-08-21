@@ -13,6 +13,7 @@ import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
 import { MusicApiService } from '../music-api/music-api.service';
 import { Genre } from 'src/enums/genre.enum';
+import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
 
 @Injectable()
 export class GameManagerService {
@@ -23,7 +24,7 @@ export class GameManagerService {
     private readonly musicApiService: MusicApiService,
   ) {}
 
-  async createGame(socketId: string): Promise<GameCreationResponse> {
+  async createGame(socketId: string, createGameRequestDto: CreateGameRequestDto): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');
     }
@@ -55,6 +56,11 @@ export class GameManagerService {
       totalRounds,
       songs,
       roundData: {},
+      gameSettings: {
+        isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
+        isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
+        isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed
+      }
     };
 
     this.gameStateRepository.saveGameState(newGameState, true);

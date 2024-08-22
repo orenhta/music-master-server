@@ -1,7 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
+import {
+  MaxInt,
+  PlaylistedTrack,
+  SpotifyApi,
+  Track,
+} from '@spotify/web-api-ts-sdk';
 import { spotifyConfig } from 'src/config/spotify.config';
+import {
+  SPOTIFY_PAGINATION_REQUEST_LIMIT,
+  SPOTIFY_PLAYLIST_URL_REGEX,
+} from 'src/constants/constants';
 import { Genre } from 'src/enums/genre.enum';
 import { Song } from 'src/types/song.type';
 
@@ -25,19 +34,42 @@ export class SpotifyRepository {
     return this.getSongsByPlaylistId(amount, this.playlistIdByGenre[genre]);
   }
 
+  getSongsByPlaylistUrl(
+    amount: MaxInt<100>,
+    playlistUrl: string,
+  ): Promise<Song[]> {
+    const playlistId = playlistUrl.match(SPOTIFY_PLAYLIST_URL_REGEX)![1];
+
+    return this.getSongsByPlaylistId(amount, playlistId);
+  }
+
   async getSongsByPlaylistId(
     amount: MaxInt<100>,
     playlistId: string,
   ): Promise<Song[]> {
-    const data = await this.spotify.playlists.getPlaylistItems(
-      playlistId,
-      undefined,
-      undefined,
-      // Although sdk limit is 50, their api allows up to 100
-      100 as MaxInt<50>,
-    );
+    const songs: PlaylistedTrack<Track>[] = [];
+    let offset = 0;
+    let hasNext = true;
 
-    return data.items
+    while (hasNext) {
+      const { items, next } = await this.spotify.playlists.getPlaylistItems(
+        playlistId,
+        undefined,
+        undefined,
+        // Although sdk limit is 50, their api allows up to 100
+        SPOTIFY_PAGINATION_REQUEST_LIMIT as MaxInt<50>,
+        offset,
+      );
+
+      songs.push(...items);
+
+      offset += SPOTIFY_PAGINATION_REQUEST_LIMIT;
+      if (!next) {
+        hasNext = false;
+      }
+    }
+
+    return songs
       .sort(() => Math.random() - 0.5)
       .filter(
         (a) =>
@@ -49,11 +81,11 @@ export class SpotifyRepository {
       .map(({ track }) => ({
         title: track.name
           .match(/^[^(]+/)![0]
-          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/[^a-zA-Z0-9א-ת\s]/g, '')
           .trim(),
         artist: track.artists[0].name
           .match(/^[^(]+/)![0]
-          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/[^a-zA-Z0-9א-ת\s]/g, '')
           .trim(),
         previewUrl: track.preview_url!,
         albumCoverUrl: track.album?.images?.[0]?.url,

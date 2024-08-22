@@ -9,13 +9,16 @@ export class MusicApiService {
   constructor(private readonly spotifyRepository: SpotifyRepository) {}
 
   async getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
-    return this.spotifyRepository.getSongsByGenre(amount, genre);
+    return await this.spotifyRepository.getSongsByGenre(amount, genre);
   }
 
-  async getSongsByClientPlaylist(
+  async getSongsByClientPlaylistUrl(
     amount: MaxInt<100>,
-    playlistId: string,
+    playlistUrl: string,
   ): Promise<Song[]> {
-    return this.spotifyRepository.getSongsByPlaylistId(amount, playlistId);
+    return await this.spotifyRepository.getSongsByPlaylistUrl(
+      amount,
+      playlistUrl,
+    );
   }
 }

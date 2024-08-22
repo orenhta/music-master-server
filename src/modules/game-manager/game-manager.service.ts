@@ -12,7 +12,6 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
 import { MusicApiService } from '../music-api/music-api.service';
-import { Genre } from 'src/enums/genre.enum';
 import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
 
 @Injectable()
@@ -43,11 +42,19 @@ export class GameManagerService {
       throw new WsException('gameId already exists');
     }
 
-    const totalRounds = 5;
-    const songs = await this.musicApiService.getSongsByGenre(
-      totalRounds,
-      Genre.TOP_HITS,
-    );
+    const songs = createGameRequestDto.genre
+      ? await this.musicApiService.getSongsByGenre(
+          createGameRequestDto.totalRounds,
+          createGameRequestDto.genre,
+        )
+      : await this.musicApiService.getSongsByClientPlaylistUrl(
+          createGameRequestDto.totalRounds,
+          createGameRequestDto.playlistUrl!,
+        );
+
+    if (songs.length < createGameRequestDto.totalRounds) {
+      throw new WsException('Not enough songs');
+    }
 
     const newGameState: GameState = {
       gameId,
@@ -56,11 +63,13 @@ export class GameManagerService {
       gameStatus: GameStatus.CREATED,
       round: 0,
       gamePlayers: {},
-      totalRounds,
+      totalRounds: createGameRequestDto.totalRounds,
       songs,
       roundData: {},
       gameSettings: {
-        ...createGameRequestDto,
+        isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
+        isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
+        isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed,
       },
     };
 

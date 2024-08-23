@@ -1,4 +1,4 @@
 export interface GameSettingsDto {
-    totalRounds : number,
-    playlistId : string 
+  totalRounds: number;
+  playlistId: string;
 }

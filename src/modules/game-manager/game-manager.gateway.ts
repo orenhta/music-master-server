@@ -27,7 +27,6 @@ import { GameSettingsDto } from 'src/dto/game-settings.dto';
 import { PlaylistsResponse } from 'src/types/playlists-response';
 import { spotifyPlaylistToPlaylist } from 'src/functions/as-dtos';
 
-
 @WebSocketGateway({
   namespace: 'game-manager',
   cors: {
@@ -47,10 +46,11 @@ export class GameManagerGateway implements OnGatewayDisconnect {
   @SubscribeMessage('create-game')
   async handleCreateGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody(defaultValidationPipe) gameSettings : GameSettingsDto
+    @MessageBody(defaultValidationPipe) gameSettings: GameSettingsDto,
   ): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
-      client.id,gameSettings
+      client.id,
+      gameSettings,
     );
 
     return gameCreationResponse;
@@ -62,8 +62,8 @@ export class GameManagerGateway implements OnGatewayDisconnect {
     const topPlaylists = await this.gameManagerService.getTopPlaylists();
 
     return {
-      top : topPlaylists.playlists.items.map(spotifyPlaylistToPlaylist),
-      master : masterPlaylists.map(spotifyPlaylistToPlaylist)
+      top: topPlaylists.playlists.items.map(spotifyPlaylistToPlaylist),
+      master: masterPlaylists.map(spotifyPlaylistToPlaylist),
     };
   }
 

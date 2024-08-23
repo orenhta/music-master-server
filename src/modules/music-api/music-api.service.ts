@@ -8,15 +8,14 @@ import { Genre } from 'src/enums/genre.enum';
 export class MusicApiService {
   constructor(private readonly spotifyRepository: SpotifyRepository) {}
 
-  async getTopPlaylists(): Promise<FeaturedPlaylists>{
+  async getTopPlaylists(): Promise<FeaturedPlaylists> {
     return this.spotifyRepository.getTopPlaylists();
   }
-  async getMasterPlaylists(){
+
+  async getMasterPlaylists() {
     return this.spotifyRepository.getMasterPlaylists();
   }
-  async getMyPlaylists(accessToken : string, refreshToken : string){
-    return this.spotifyRepository.getMyPlaylists(accessToken, refreshToken);
-  }
+
   async getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
     return this.spotifyRepository.getSongsByGenre(amount, genre);
   }

@@ -24,19 +24,18 @@ export class GameManagerService {
     private readonly musicApiService: MusicApiService,
   ) {}
 
-  async getTopPlaylists(){
+  async getTopPlaylists() {
     return await this.musicApiService.getTopPlaylists();
   }
 
-  async getMasterPlaylists(){
+  async getMasterPlaylists() {
     return await this.musicApiService.getMasterPlaylists();
   }
 
-  async getMyPlaylists(accessToken : string, refreshToken : string){
-    return await this.musicApiService.getMyPlaylists(accessToken, refreshToken);
-  }
-
-  async createGame(socketId: string, gameSettings : GameSettingsDto): Promise<GameCreationResponse> {
+  async createGame(
+    socketId: string,
+    gameSettings: GameSettingsDto,
+  ): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');
     }
@@ -53,7 +52,7 @@ export class GameManagerService {
     }
     const songs = await this.musicApiService.getSongsByClientPlaylist(
       gameSettings.totalRounds as MaxInt<100>,
-      gameSettings.playlistId
+      gameSettings.playlistId,
     );
 
     const newGameState: GameState = {
@@ -63,7 +62,7 @@ export class GameManagerService {
       gameStatus: GameStatus.CREATED,
       round: 0,
       gamePlayers: {},
-      totalRounds : gameSettings.totalRounds,
+      totalRounds: gameSettings.totalRounds,
       songs,
       roundData: {},
     };

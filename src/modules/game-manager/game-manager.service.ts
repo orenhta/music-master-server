@@ -52,7 +52,7 @@ export class GameManagerService {
 
     const songs = await this.musicApiService.getSongsByPlaylistId(
       createGameRequestDto.totalRounds,
-      createGameRequestDto.playlistId
+      createGameRequestDto.playlistId,
     );
 
     if (songs.length < createGameRequestDto.totalRounds) {

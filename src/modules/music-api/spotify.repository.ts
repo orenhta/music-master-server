@@ -7,10 +7,7 @@ import {
   Track,
 } from '@spotify/web-api-ts-sdk';
 import { spotifyConfig } from 'src/config/spotify.config';
-import {
-  SPOTIFY_PAGINATION_REQUEST_LIMIT,
-  SPOTIFY_PLAYLIST_URL_REGEX,
-} from 'src/constants/constants';
+import { SPOTIFY_PAGINATION_REQUEST_LIMIT } from 'src/constants/constants';
 import { Genre } from 'src/enums/genre.enum';
 import { Song } from 'src/types/song.type';
 
@@ -41,14 +38,10 @@ export class SpotifyRepository {
 
   async getMasterPlaylists() {
     return await Promise.all(
-      Object.values(this.config.playlistIdByGenre).map(
+      Object.values(this.playlistIdByGenre).map(
         async (id) => await this.spotify.playlists.getPlaylist(id),
       ),
     );
-  }
-
-  getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
-    return this.getSongsByPlaylistId(amount, this.playlistIdByGenre[genre]);
   }
 
   async getSongsByPlaylistId(

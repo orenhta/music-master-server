@@ -47,7 +47,8 @@ export class GameManagerGateway implements OnGatewayDisconnect {
   async handleCreateGame(
     @MessageBody(defaultValidationPipe)
     payload: CreateGameRequestDto,
-    @ConnectedSocket() client: Socket): Promise<GameCreationResponse> {
+    @ConnectedSocket() client: Socket,
+  ): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
       client.id,
       payload,

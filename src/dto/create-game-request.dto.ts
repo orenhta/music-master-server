@@ -33,7 +33,7 @@ export class CreateGameRequestDto {
 
   @IsString()
   @Length(22)
-  playlistId: string
+  playlistId: string;
 
   // @IsUrl()
   // @Matches(SPOTIFY_PLAYLIST_URL_REGEX)

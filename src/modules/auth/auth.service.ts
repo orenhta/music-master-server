@@ -4,6 +4,7 @@ import { SpotifyAuthResponse } from "../music-api/spotify.repository";
 import { spotifyConfig } from "src/config/spotify.config";
 import { ConfigType } from "@nestjs/config";
 import * as querystring from 'querystring';
+import { AccessToken } from "@spotify/web-api-ts-sdk";
 
 @Injectable()
 export class AuthService {
@@ -27,7 +28,7 @@ export class AuthService {
     return { url };
   }
 
-  async getSpotifyTokens(code : string) : Promise<SpotifyAuthResponse>{
+  async getSpotifyTokens(code : string) : Promise<AccessToken>{
     const tokenResponse = await axios.post('https://accounts.spotify.com/api/token', querystring.stringify({
       code,
       redirect_uri: this.config.redirectUri,

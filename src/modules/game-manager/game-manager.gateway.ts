@@ -24,6 +24,9 @@ import { GameState } from 'src/types/game-state.type';
 import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { GameSettingsDto } from 'src/dto/game-settings.dto';
+import { PlaylistsResponse } from 'src/types/playlists-response';
+import { spotifyPlaylistToPlaylist } from 'src/functions/as-dtos';
+
 
 @WebSocketGateway({
   namespace: 'game-manager',
@@ -51,6 +54,17 @@ export class GameManagerGateway implements OnGatewayDisconnect {
     );
 
     return gameCreationResponse;
+  }
+
+  @SubscribeMessage('prepare-game')
+  async handlePrepareGame(): Promise<PlaylistsResponse> {
+    const masterPlaylists = await this.gameManagerService.getMasterPlaylists();
+    const topPlaylists = await this.gameManagerService.getTopPlaylists();
+
+    return {
+      top : topPlaylists.playlists.items.map(spotifyPlaylistToPlaylist),
+      master : masterPlaylists.map(spotifyPlaylistToPlaylist)
+    };
   }
 
   @UseGuards(GameExistsGuard)

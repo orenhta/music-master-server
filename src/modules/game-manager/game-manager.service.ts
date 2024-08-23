@@ -32,8 +32,8 @@ export class GameManagerService {
     return await this.musicApiService.getMasterPlaylists();
   }
 
-  async getMyPlaylists(accessToken : string){
-    return await this.musicApiService.getMyPlaylists(accessToken);
+  async getMyPlaylists(accessToken : string, refreshToken : string){
+    return await this.musicApiService.getMyPlaylists(accessToken, refreshToken);
   }
 
   async createGame(socketId: string, gameSettings : GameSettingsDto): Promise<GameCreationResponse> {

@@ -14,8 +14,8 @@ export class MusicApiService {
   async getMasterPlaylists(){
     return this.spotifyRepository.getMasterPlaylists();
   }
-  async getMyPlaylists(accessToken : string){
-    return this.spotifyRepository.getMyPlaylists(accessToken);
+  async getMyPlaylists(accessToken : string, refreshToken : string){
+    return this.spotifyRepository.getMyPlaylists(accessToken, refreshToken);
   }
   async getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
     return this.spotifyRepository.getSongsByGenre(amount, genre);

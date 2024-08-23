@@ -5,6 +5,7 @@ export type EndRoundResponse = {
   songGuessedBy: string | null;
   artistGuessedBy: string | null;
   correctAnswer: Song;
-  scores: Player[];
-  roundScores: Player[];
+  scores: EndRoundPlayerRespnse[];
 };
+
+export type EndRoundPlayerRespnse = Player & { gainedScore: number };

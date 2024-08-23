@@ -13,6 +13,7 @@ import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
 import { MusicApiService } from '../music-api/music-api.service';
 import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
+import { gameStateToEndRoundScore } from 'src/functions/game-state-to-end-round-score';
 
 @Injectable()
 export class GameManagerService {
@@ -22,6 +23,14 @@ export class GameManagerService {
     private readonly gameStateRepository: GameStateRepository,
     private readonly musicApiService: MusicApiService,
   ) {}
+
+  async getTopPlaylists() {
+    return await this.musicApiService.getTopPlaylists();
+  }
+
+  async getMasterPlaylists() {
+    return await this.musicApiService.getMasterPlaylists();
+  }
 
   async createGame(
     socketId: string,
@@ -42,15 +51,10 @@ export class GameManagerService {
       throw new WsException('gameId already exists');
     }
 
-    const songs = createGameRequestDto.genre
-      ? await this.musicApiService.getSongsByGenre(
-          createGameRequestDto.totalRounds,
-          createGameRequestDto.genre,
-        )
-      : await this.musicApiService.getSongsByClientPlaylistUrl(
-          createGameRequestDto.totalRounds,
-          createGameRequestDto.playlistUrl!,
-        );
+    const songs = await this.musicApiService.getSongsByPlaylistId(
+      createGameRequestDto.totalRounds,
+      createGameRequestDto.playlistId,
+    );
 
     if (songs.length < createGameRequestDto.totalRounds) {
       throw new WsException('Not enough songs');
@@ -193,10 +197,7 @@ export class GameManagerService {
       songGuessedBy: gameState.roundData.songGuessedBy,
       artistGuessedBy: gameState.roundData.artistGuessedBy,
       correctAnswer,
-      scores: Object.values(gameState.gamePlayers),
-      roundScores: Object.entries(gameState.roundData.scores).map(
-        ([userName, score]) => ({ userName, score }),
-      ),
+      scores: gameStateToEndRoundScore(gameState),
     };
   }
 
@@ -213,7 +214,7 @@ export class GameManagerService {
     this.gameClientGateway.server.in(gameId).socketsLeave(gameId);
 
     return {
-      scores: Object.values(gameState.gamePlayers),
+      scores: gameStateToEndRoundScore(gameState),
     };
   }
 

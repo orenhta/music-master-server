@@ -7,10 +7,7 @@ import {
   Track,
 } from '@spotify/web-api-ts-sdk';
 import { spotifyConfig } from 'src/config/spotify.config';
-import {
-  SPOTIFY_PAGINATION_REQUEST_LIMIT,
-  SPOTIFY_PLAYLIST_URL_REGEX,
-} from 'src/constants/constants';
+import { SPOTIFY_PAGINATION_REQUEST_LIMIT } from 'src/constants/constants';
 import { Genre } from 'src/enums/genre.enum';
 import { Song } from 'src/types/song.type';
 
@@ -30,17 +27,21 @@ export class SpotifyRepository {
     this.playlistIdByGenre = config.playlistIdByGenre;
   }
 
-  getSongsByGenre(amount: MaxInt<100>, genre: Genre): Promise<Song[]> {
-    return this.getSongsByPlaylistId(amount, this.playlistIdByGenre[genre]);
+  async getTopPlaylists() {
+    return await this.spotify.browse.getFeaturedPlaylists(
+      'IL',
+      undefined,
+      undefined,
+      10,
+    );
   }
 
-  getSongsByPlaylistUrl(
-    amount: MaxInt<100>,
-    playlistUrl: string,
-  ): Promise<Song[]> {
-    const playlistId = playlistUrl.match(SPOTIFY_PLAYLIST_URL_REGEX)![1];
-
-    return this.getSongsByPlaylistId(amount, playlistId);
+  async getMasterPlaylists() {
+    return await Promise.all(
+      Object.values(this.playlistIdByGenre).map((id) =>
+        this.spotify.playlists.getPlaylist(id),
+      ),
+    );
   }
 
   async getSongsByPlaylistId(

@@ -4,7 +4,9 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
+  IsString,
   IsUrl,
+  Length,
   Matches,
   Max,
   Min,
@@ -29,12 +31,7 @@ export class CreateGameRequestDto {
   @Max(30)
   totalRounds: MaxInt<30>;
 
-  @IsUrl()
-  @Matches(SPOTIFY_PLAYLIST_URL_REGEX)
-  @ValidateIf((o) => !o.genre || o.playlistUrl)
-  playlistUrl?: string;
-
-  @IsEnum(Genre)
-  @ValidateIf((o) => !o.playlistUrl || o.genre)
-  genre?: Genre;
+  @IsString()
+  @Length(22)
+  playlistId: string;
 }

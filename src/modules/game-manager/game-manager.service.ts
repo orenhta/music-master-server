@@ -165,6 +165,7 @@ export class GameManagerService {
         songGuessedBy: null,
         buzzersGranted: [],
         buzzerGrantedAt: null,
+        scores: {},
       },
     });
 
@@ -193,6 +194,9 @@ export class GameManagerService {
       artistGuessedBy: gameState.roundData.artistGuessedBy,
       correctAnswer,
       scores: Object.values(gameState.gamePlayers),
+      roundScores: Object.entries(gameState.roundData.scores).map(
+        ([userName, score]) => ({ userName, score }),
+      ),
     };
   }
 

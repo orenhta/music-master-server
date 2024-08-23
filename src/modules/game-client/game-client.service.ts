@@ -103,6 +103,10 @@ export class GameClientService {
                 currentGameState.roundData.roundStartedAt,
               );
 
+            const currentRoundPlayerScore =
+              gameState.roundData.scores[player.userName] ?? 0;
+            gameState.roundData.scores[player.userName] =
+              currentRoundPlayerScore + punishmentScore;
             gameState.gamePlayers[socketId].score += punishmentScore;
           }
 
@@ -171,7 +175,11 @@ export class GameClientService {
       gameState.streak = undefined;
     }
 
+    const currentRoundPlayerScore =
+      gameState.roundData.scores[player.userName] ?? 0;
     gameState.gamePlayers[socketId].score += score;
+    gameState.roundData.scores[player.userName] =
+      currentRoundPlayerScore + score;
 
     if (
       (!!gameState.roundData.artistGuessedBy || isArtistCorrect) &&
@@ -182,6 +190,9 @@ export class GameClientService {
         artistGuessedBy: gameState.roundData.artistGuessedBy ?? player.userName,
         correctAnswer: gameState.songs[gameState.round - 1],
         scores: Object.values(gameState.gamePlayers),
+        roundScores: Object.entries(gameState.roundData.scores).map(
+          ([userName, score]) => ({ userName, score }),
+        ),
       };
 
       await this.gameStateRepository.saveGameState({

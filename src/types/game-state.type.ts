@@ -4,11 +4,12 @@ import { Song } from './song.type';
 
 export type RoundData = {
   roundStartedAt: number;
-  artistGuessedBy: string | null;
-  songGuessedBy: string | null;
+  artistGuessedBy: Player['userName'] | null;
+  songGuessedBy: Player['userName'] | null;
   currentGuessingPlayer: string | null;
   buzzersGranted: string[];
   buzzerGrantedAt: number | null;
+  scores: Record<Player['userName'], number>;
 };
 
 export type GameState<T extends GameStatus = GameStatus> = {

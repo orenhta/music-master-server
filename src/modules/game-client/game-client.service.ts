@@ -13,6 +13,7 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { ScoreService } from './score.service';
 import { AnswerValidatorService } from './answer-validator.service';
 import { AnswerReport } from 'src/types/answer-report.type';
+import { gameStateToEndRoundScore } from 'src/functions/game-state-to-end-round-score';
 
 @Injectable()
 export class GameClientService {
@@ -189,10 +190,7 @@ export class GameClientService {
         songGuessedBy: gameState.roundData.songGuessedBy ?? player.userName,
         artistGuessedBy: gameState.roundData.artistGuessedBy ?? player.userName,
         correctAnswer: gameState.songs[gameState.round - 1],
-        scores: Object.values(gameState.gamePlayers),
-        roundScores: Object.entries(gameState.roundData.scores).map(
-          ([userName, score]) => ({ userName, score }),
-        ),
+        scores: gameStateToEndRoundScore(gameState),
       };
 
       await this.gameStateRepository.saveGameState({

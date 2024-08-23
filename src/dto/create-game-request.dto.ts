@@ -34,13 +34,4 @@ export class CreateGameRequestDto {
   @IsString()
   @Length(22)
   playlistId: string;
-
-  // @IsUrl()
-  // @Matches(SPOTIFY_PLAYLIST_URL_REGEX)
-  // @ValidateIf((o) => !o.genre || o.playlistUrl)
-  // playlistUrl?: string;
-
-  // @IsEnum(Genre)
-  // @ValidateIf((o) => !o.playlistUrl || o.genre)
-  // genre?: Genre;
 }

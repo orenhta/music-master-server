@@ -1,8 +1,4 @@
-import {
-  SimplifiedPlaylist,
-  Playlist as SpotifyPlaylist,
-  Track,
-} from '@spotify/web-api-ts-sdk';
+import { SimplifiedPlaylist } from '@spotify/web-api-ts-sdk';
 import { Playlist } from 'src/types/playlist.type';
 
 export const spotifyPlaylistToPlaylist = (

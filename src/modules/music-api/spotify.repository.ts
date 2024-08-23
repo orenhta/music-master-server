@@ -38,8 +38,8 @@ export class SpotifyRepository {
 
   async getMasterPlaylists() {
     return await Promise.all(
-      Object.values(this.playlistIdByGenre).map(
-        async (id) => await this.spotify.playlists.getPlaylist(id),
+      Object.values(this.playlistIdByGenre).map((id) =>
+        this.spotify.playlists.getPlaylist(id),
       ),
     );
   }

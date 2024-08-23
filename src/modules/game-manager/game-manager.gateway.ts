@@ -57,7 +57,7 @@ export class GameManagerGateway implements OnGatewayDisconnect {
     return gameCreationResponse;
   }
 
-  @SubscribeMessage('prepare-game')
+  @SubscribeMessage('get-available-playlists')
   async handlePrepareGame(): Promise<PlaylistsResponse> {
     const masterPlaylists = await this.gameManagerService.getMasterPlaylists();
     const topPlaylists = await this.gameManagerService.getTopPlaylists();

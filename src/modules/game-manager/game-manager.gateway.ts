@@ -23,7 +23,7 @@ import { GameExistsGuard } from '../game-client/guards/game-exists.guard';
 import { GameState } from 'src/types/game-state.type';
 import { defaultValidationPipe } from 'src/pipes/default-validation.pipe';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
-import { GameSettingsDto } from 'src/dto/game-settings.dto';
+import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
 import { PlaylistsResponse } from 'src/types/playlists-response';
 import { spotifyPlaylistToPlaylist } from 'src/functions/as-dtos';
 
@@ -45,12 +45,12 @@ export class GameManagerGateway implements OnGatewayDisconnect {
 
   @SubscribeMessage('create-game')
   async handleCreateGame(
-    @ConnectedSocket() client: Socket,
-    @MessageBody(defaultValidationPipe) gameSettings: GameSettingsDto,
-  ): Promise<GameCreationResponse> {
+    @MessageBody(defaultValidationPipe)
+    payload: CreateGameRequestDto,
+    @ConnectedSocket() client: Socket): Promise<GameCreationResponse> {
     const gameCreationResponse = await this.gameManagerService.createGame(
       client.id,
-      gameSettings,
+      payload,
     );
 
     return gameCreationResponse;

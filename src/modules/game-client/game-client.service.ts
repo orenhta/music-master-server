@@ -58,7 +58,6 @@ export class GameClientService {
       await this.gameStateRepository.getGameState<GameStatus.ROUND_IN_PROGRESS>(
         gameId,
       );
-
     const player = gameState.gamePlayers[socketId];
 
     const buzzersGranted = [...gameState.roundData.buzzersGranted, socketId];
@@ -97,12 +96,15 @@ export class GameClientService {
           currentGameState.roundData.currentGuessingPlayer === socketId &&
           currentBuzzerId === buzzerId
         ) {
-          const punishmentScore = this.scoreService.getTimeBasedPunishmentScore(
-            buzzerGrantedAt,
-            currentGameState.roundData.roundStartedAt,
-          );
+          if (currentGameState.gameSettings.isPunishmentScoreAllowed) {
+            const punishmentScore =
+              this.scoreService.getTimeBasedPunishmentScore(
+                buzzerGrantedAt,
+                currentGameState.roundData.roundStartedAt,
+              );
 
-          gameState.gamePlayers[socketId].score += punishmentScore;
+            gameState.gamePlayers[socketId].score += punishmentScore;
+          }
 
           if (gameState.streak?.player === socketId) {
             gameState.streak = undefined;
@@ -153,6 +155,8 @@ export class GameClientService {
       gameState?.streak?.player === socketId ? gameState.streak.multiplier : 1,
       gameState.roundData.roundStartedAt,
       gameState.roundData.buzzerGrantedAt!,
+      gameState.gameSettings.isTimeBasedScore,
+      gameState.gameSettings.isPunishmentScoreAllowed,
     );
 
     if (isArtistCorrect || isTitleCorrect) {

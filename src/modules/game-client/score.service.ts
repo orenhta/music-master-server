@@ -13,16 +13,21 @@ export class ScoreService {
     streak: number,
     roundStartedAt: number,
     buzzerGrantedAt: number,
+    isTimeBasedScore: boolean,
+    isPunishmentScoreAllowed: boolean,
   ): number {
-    return isArtistCorrect || isTitleCorrect
-      ? Number(
-          (
-            this.getBaseScore(isArtistCorrect, isTitleCorrect) *
-            this.getTimeMultiplier(buzzerGrantedAt, roundStartedAt) *
-            streak
-          ).toFixed(2),
-        )
-      : this.getTimeBasedPunishmentScore(buzzerGrantedAt, roundStartedAt);
+    if (!(isArtistCorrect || isTitleCorrect)) {
+      return isPunishmentScoreAllowed
+        ? this.getTimeBasedPunishmentScore(buzzerGrantedAt, roundStartedAt)
+        : 0;
+    }
+
+    const baseScore = this.getBaseScore(isArtistCorrect, isTitleCorrect);
+    const timeMultiplier = isTimeBasedScore
+      ? this.getTimeMultiplier(buzzerGrantedAt, roundStartedAt)
+      : 1;
+
+    return Number((baseScore * timeMultiplier * streak).toFixed(2));
   }
 
   getTimeBasedPunishmentScore(

@@ -12,8 +12,7 @@ import { EmittedEvent } from 'src/enums/emitted-events.enum';
 import { RejoinGameRequestDto } from 'src/dto/rejoin-game-request.dto';
 import { v4 as uuid } from 'uuid';
 import { MusicApiService } from '../music-api/music-api.service';
-import { MaxInt } from '@spotify/web-api-ts-sdk';
-import { GameSettingsDto } from 'src/dto/game-settings.dto';
+import { CreateGameRequestDto } from 'src/dto/create-game-request.dto';
 
 @Injectable()
 export class GameManagerService {
@@ -34,7 +33,7 @@ export class GameManagerService {
 
   async createGame(
     socketId: string,
-    gameSettings: GameSettingsDto,
+    createGameRequestDto: CreateGameRequestDto,
   ): Promise<GameCreationResponse> {
     if (await this.gameStateRepository.getGameIdBySocketId(socketId)) {
       throw new WsException('host is already in a game');
@@ -50,10 +49,15 @@ export class GameManagerService {
     if (gameIdExists) {
       throw new WsException('gameId already exists');
     }
-    const songs = await this.musicApiService.getSongsByClientPlaylist(
-      gameSettings.totalRounds as MaxInt<100>,
-      gameSettings.playlistId,
+
+    const songs = await this.musicApiService.getSongsByPlaylistId(
+      createGameRequestDto.totalRounds,
+      createGameRequestDto.playlistId
     );
+
+    if (songs.length < createGameRequestDto.totalRounds) {
+      throw new WsException('Not enough songs');
+    }
 
     const newGameState: GameState = {
       gameId,
@@ -62,9 +66,14 @@ export class GameManagerService {
       gameStatus: GameStatus.CREATED,
       round: 0,
       gamePlayers: {},
-      totalRounds: gameSettings.totalRounds,
+      totalRounds: createGameRequestDto.totalRounds,
       songs,
       roundData: {},
+      gameSettings: {
+        isTimeBasedScore: createGameRequestDto.isTimeBasedScore,
+        isPunishmentScoreAllowed: createGameRequestDto.isPunishmentScoreAllowed,
+        isBuzzerTwiceAllowed: createGameRequestDto.isBuzzerTwiceAllowed,
+      },
     };
 
     this.gameStateRepository.saveGameState(newGameState, true);

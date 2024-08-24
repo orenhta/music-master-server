@@ -30,7 +30,7 @@ export class SpotifyRepository {
   async getTopPlaylists() {
     return await this.spotify.browse.getFeaturedPlaylists(
       'IL',
-      undefined,
+      'he_IL',
       undefined,
       10,
     );

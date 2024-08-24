@@ -1,19 +1,13 @@
 import { MaxInt } from '@spotify/web-api-ts-sdk';
 import {
   IsBoolean,
-  IsEnum,
   IsInt,
   IsNumber,
   IsString,
-  IsUrl,
   Length,
-  Matches,
   Max,
   Min,
-  ValidateIf,
 } from 'class-validator';
-import { SPOTIFY_PLAYLIST_URL_REGEX } from 'src/constants/constants';
-import { Genre } from 'src/enums/genre.enum';
 
 export class CreateGameRequestDto {
   @IsBoolean()

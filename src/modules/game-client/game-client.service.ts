@@ -89,7 +89,10 @@ export class GameClientService {
     setTimeout(async () => {
       const currentGameState =
         await this.gameStateRepository.getGameState(gameId);
-      if (isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)) {
+      if (
+        currentGameState &&
+        isGameStateOfStatus(currentGameState, GameStatus.ROUND_IN_PROGRESS)
+      ) {
         const currentBuzzerId =
           currentGameState.roundData.buzzersGranted.length;
         if (

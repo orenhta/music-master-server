@@ -23,16 +23,16 @@ export class SpotifyRepository {
     this.spotify = SpotifyApi.withClientCredentials(
       config.clientId,
       config.clientSecret,
+      undefined,
     );
     this.playlistIdByGenre = config.playlistIdByGenre;
   }
 
   async getTopPlaylists() {
-    return await this.spotify.browse.getFeaturedPlaylists(
+    return await this.spotify.browse.getPlaylistsForCategory(
+      '0JQ5DAudkNjCgYMM0TZXDw',
       'IL',
-      'he_IL',
-      undefined,
-      10,
+      50,
     );
   }
 

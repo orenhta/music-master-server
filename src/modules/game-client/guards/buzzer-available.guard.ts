@@ -27,7 +27,7 @@ export class BuzzerAvailableGuard implements CanActivate {
 
     if (
       !gameState.gameSettings.isBuzzerTwiceAllowed &&
-      socket.id !== arrayLast(gameState.roundData.buzzersGranted)
+      socket.id === arrayLast(gameState.roundData.buzzersGranted)
     ) {
       throw new WsException('Player cannot take buzzer twice');
     }

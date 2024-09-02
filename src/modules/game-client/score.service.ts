@@ -27,18 +27,20 @@ export class ScoreService {
       ? this.getTimeMultiplier(buzzerGrantedAt, roundStartedAt)
       : 1;
 
-    return Number((baseScore * timeMultiplier * streak).toFixed(2));
+    return Math.round(Number((baseScore * timeMultiplier * streak).toFixed(2)));
   }
 
   getTimeBasedPunishmentScore(
     buzzerTime: number,
     roundStartedAt: number,
   ): number {
-    return buzzerTime - roundStartedAt < TIME_RELATIVE_GUESS_START_MS
-      ? -20
-      : buzzerTime - roundStartedAt > TIME_RELATIVE_GUESS_END_MS
-        ? -5
-        : -10;
+    const punishmentScore =
+      buzzerTime - roundStartedAt < TIME_RELATIVE_GUESS_START_MS
+        ? -20
+        : buzzerTime - roundStartedAt > TIME_RELATIVE_GUESS_END_MS
+          ? -5
+          : -10;
+    return Math.round(punishmentScore);
   }
 
   private getBaseScore(
